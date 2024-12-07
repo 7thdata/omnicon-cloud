@@ -24,16 +24,26 @@ namespace apiCms.Controllers
         /// <summary>
         /// Handles requests to fetch an article by its ID or PermaName.
         /// </summary>
-        /// <param name="articleRequest">The request model containing the channel ID, article ID, or PermaName.</param>
+        /// <param name="articleRequest">
+        /// The request model containing the channel ID, and either the article ID or the PermaName.
+        /// </param>
         /// <returns>
         /// An ActionResult containing the article details in a GetArticleResponseModel.
-        /// Returns:
-        /// - 200 OK: When the article is successfully retrieved.
-        /// - 400 Bad Request: When required parameters are missing.
-        /// - 404 Not Found: When the article does not exist.
         /// </returns>
+        /// <response code="200">Returns the article details successfully.</response>
+        /// <response code="400">
+        /// Returns a BadRequest if required parameters (ChannelId, ArticleId, or ArticlePermaName) are missing.
+        /// </response>
+        /// <response code="404">Returns NotFound if the article does not exist.</response>
+        /// <remarks>
+        /// At least one of ArticleId or ArticlePermaName must be provided. 
+        /// If both are provided, ArticleId takes precedence.
+        /// </remarks>
         [HttpPost("/article")]
-        public async Task<ActionResult> GetArticleAsync(GetArticleRequestModel articleRequest)
+        [ProducesResponseType(typeof(GetArticleResponseModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<GetArticleResponseModel>> GetArticleAsync(GetArticleRequestModel articleRequest)
         {
             // Validate that ChannelId is provided.
             if (string.IsNullOrEmpty(articleRequest.ChannelId))
@@ -80,8 +90,21 @@ namespace apiCms.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Fetches a list of articles based on the provided filters, sorting, and pagination options.
+        /// </summary>
+        /// <param name="artic">The request model containing filtering, sorting, and pagination details.</param>
+        /// <returns>
+        /// A list of articles matching the specified criteria, wrapped in a response model.
+        /// </returns>
+        /// <response code="200">Returns the list of articles successfully.</response>
+        /// <response code="400">If the request model contains invalid data.</response>
+        /// <response code="401">If the user is not authenticated.</response>
         [HttpPost("/articles")]
-        public async Task<ActionResult> GetArticlesAsync(GetArticlesRequestModel articlesRequest)
+        [ProducesResponseType(typeof(GetArticlesResponseModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<GetArticlesRequestModel>> GetArticlesAsync(GetArticlesRequestModel articlesRequest)
         {
             var articles = await _articleServices.SearchArticlesAsync(articlesRequest.channelId,
                 articlesRequest.keyword, articlesRequest.currentPage, articlesRequest.itemsPerPage, articlesRequest.sort);
