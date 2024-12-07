@@ -26,18 +26,20 @@ namespace apiCms.Controllers
         /// <summary>
         /// Fetches a list of channels in a specified organization with optional filtering, sorting, and pagination.
         /// </summary>
-        /// <param name="requestChannels">The request model containing organization ID, filtering, sorting, and pagination options.</param>
+        /// <param name="requestChannels">
+        /// The request model containing the organization ID, keyword for filtering, sorting options, and pagination details.
+        /// </param>
         /// <returns>
-        /// A paginated list of channels in the specified organization wrapped in a response model.
+        /// An ActionResult containing a paginated list of channels wrapped in a GetChannelsResponseModel.
         /// </returns>
-        /// <response code="200">Returns the list of channels.</response>
-        /// <response code="401">If the user is not authenticated.</response>
-        /// <response code="400">If the organization ID or other required parameters are missing or invalid.</response>
+        /// <response code="200">Returns the list of channels successfully.</response>
+        /// <response code="400">Returns BadRequest if required parameters (e.g., OrganizationId) are missing or invalid.</response>
+        /// <response code="401">Returns Unauthorized if the user is not authenticated.</response>
         [HttpPost("/channels")]
         [ProducesResponseType(typeof(GetChannelsResponseModel), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetChannels(GetChannelsRequestModel requestChannels)
+        public async Task<ActionResult<GetChannelsResponseModel>> GetChannels(GetChannelsRequestModel requestChannels)
         {
             // Get the current user.
             var user = await _userManager.GetUserAsync(User);
@@ -78,7 +80,7 @@ namespace apiCms.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetChannel(GetChannelRequestModel requestChannel)
+        public async Task<ActionResult<GetChannelResponseModel>> GetChannel(GetChannelRequestModel requestChannel)
         {
             // Validate the channel ID.
             if (string.IsNullOrEmpty(requestChannel.ChannelId))

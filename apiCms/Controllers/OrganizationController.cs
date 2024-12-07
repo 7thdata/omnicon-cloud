@@ -36,7 +36,7 @@ namespace apiCms.Controllers
         [HttpPost("/organizations")]
         [ProducesResponseType(typeof(GetOrganizationsResponseModel), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetOrganizations(GetOrganizationsRequestModel organizationsRequestModel)
+        public async Task<ActionResult<GetOrganizationsResponseModel>> GetOrganizations(GetOrganizationsRequestModel organizationsRequestModel)
         {
             // Fetch the current user.
             var user = await _userManager.GetUserAsync(User);
@@ -72,7 +72,7 @@ namespace apiCms.Controllers
         [ProducesResponseType(typeof(GetOrganizationResponseModel), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetOrganization(GetOrganizationRequestModel organizationRequest)
+        public async Task<ActionResult<GetOrganizationResponseModel>> GetOrganization(GetOrganizationRequestModel organizationRequest)
         {
             // Validate the organization ID.
             if (string.IsNullOrEmpty(organizationRequest.OrganizationId))
