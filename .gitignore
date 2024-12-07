@@ -1,6 +1,94 @@
-﻿################################################################################
-# この .gitignore ファイルは Microsoft(R) Visual Studio によって自動的に作成されました。
-################################################################################
+﻿# Ignore Visual Studio specific files
+.vs/
 
-/.vs
-/apiCms/bin
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Auto-generated files
+*.designer.cs
+*.vspscc
+*.vssscc
+
+# Build results
+bin/
+obj/
+Debug/
+Release/
+
+# Package directories
+packages/
+node_modules/
+
+# Logs and temporary files
+*.log
+*.tlog
+*.pidb
+*.pdb
+
+# Publish output
+*.Publish.xml
+*.cache
+
+# Configuration and secrets
+**/appsettings.json    # Ignore all appsettings.json files
+**/appsettings.*.json  # Ignore all appsettings.<environment>.json files (e.g., appsettings.Development.json)
+
+# Ignore all launchSettings.json files across all projects
+**/Properties/launchSettings.json
+
+# Publish Profiles
+**/PublishProfiles/*.pubxml
+**/PublishProfiles/*.pubxml.user
+
+# Ignore all profile.arm.json files
+**/profile.arm.json
+
+# Ignore database migrations
+**/Data/Migrations/*.cs
+**/Data/Migrations/*.resx
+
+# IIS related files
+*.vspscc
+*.vssscc
+
+# Recycle bin folder for Visual Studio Code
+.vscode/
+
+# Resharper files
+*.resharper
+*_ReSharper.*
+
+# JetBrains Rider specific files
+.idea/
+
+# Backup and archive files
+*.bak
+*.swp
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# NuGet packages
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+
+# ASP.NET Temporary files
+**/App_Data/TEMP/
+
+# Thumbs.db and other system files
+Thumbs.db
+ehthumbs.db
+
+# Files related to Git history
+.gitkeep
+/wppCms/appsettings.json
+/wppCms/appsettings.Development.json
+/wppCms/ScaffoldingReadMe.txt
+/apiCms/appsettings.Development.json
+/apiCms/appsettings.json
