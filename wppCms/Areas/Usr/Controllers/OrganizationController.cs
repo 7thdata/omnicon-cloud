@@ -28,11 +28,11 @@ namespace wppCms.Areas.Usr.Controllers
         /// <param name="culture"></param>
         /// <returns></returns>
         [Route("/{culture}/usr/organizations")]
-        public async Task<IActionResult> Index(string culture)
+        public async Task<IActionResult> Index(string culture, string keyword, string sort)
         {
             var user = await _userManager.GetUserAsync(User);
 
-            var myOrganizations = await _userServices.GetMyOrganizationsAsync(user.Id);
+            var myOrganizations = await _userServices.GetMyOrganizationsAsync(user.Id,keyword,sort);
 
             var view = new UsrOrganizationIndexViewModel()
             {

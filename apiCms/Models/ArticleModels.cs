@@ -2,10 +2,26 @@
 
 namespace apiCms.Models
 {
+    /// <summary>
+    /// Represents the request to fetch an article.
+    /// </summary>
     public class GetArticleRequestModel
     {
-        public string channelId { get; set; }
-        public string articleId { get; set; }
+        /// <summary>
+        /// The ID of the channel where the article resides.
+        /// </summary>
+        public string ChannelId { get; set; }
+
+        /// <summary>
+        /// The unique identifier of the article. 
+        /// If both ArticleId and ArticlePermaName are provided, ArticleId takes precedence.
+        /// </summary>
+        public string? ArticleId { get; set; }
+
+        /// <summary>
+        /// The permalink name of the article.
+        /// </summary>
+        public string? ArticlePermaName { get; set; }
     }
 
     public class GetArticleResponseModel
