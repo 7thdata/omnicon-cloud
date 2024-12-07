@@ -225,4 +225,16 @@
   <data name="PremiumApiCalls" xml:space="preserve">
     <value>Unlimited API calls per month</value>
   </data>
+  <data name="ContributeOrRaiseIssuesMessage" xml:space="preserve">
+    <value>Feel free to contribute or raise issues on GitHub to improve the project.</value>
+  </data>
+  <data name="DeployOwnEnvironmentHeading" xml:space="preserve">
+    <value>Or Deploy It On Your Own Environment</value>
+  </data>
+  <data name="DeployOwnEnvironmentMessage" xml:space="preserve">
+    <value>Deploy the program onto your own environment and use it for free. You can find the repository here:</value>
+  </data>
+  <data name="GitHubRepositoryLinkText" xml:space="preserve">
+    <value>Omnicon Cloud GitHub Repository</value>
+  </data>
 </root>
