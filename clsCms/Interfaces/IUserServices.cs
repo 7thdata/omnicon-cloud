@@ -31,11 +31,14 @@ namespace clsCms.Services
         Task<OrganizationViewModel> GetOrganizationViewByIdAsync(string organizationId);
 
         /// <summary>
-        /// Get my organizations
+        /// Retrieves a list of organizations the user is a member of, with optional filtering and sorting.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(string userId);
+        /// <param name="userId">The ID of the user whose organizations are being fetched.</param>
+        /// <param name="keyword">An optional keyword for filtering organizations by name or description.</param>
+        /// <param name="sort">An optional sort parameter to define the sorting order.</param>
+        /// <returns>A list of organizations with their details and members.</returns>
+        Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(string userId,
+            string? keyword, string? sort);
 
         /// <summary>
         /// Upsert organization

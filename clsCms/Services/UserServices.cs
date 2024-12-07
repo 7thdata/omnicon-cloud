@@ -147,24 +147,52 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Get my organizations
+        /// Retrieves a list of organizations the user is a member of, with optional filtering and sorting.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(string userId)
+        /// <param name="userId">The ID of the user whose organizations are being fetched.</param>
+        /// <param name="keyword">An optional keyword for filtering organizations by name or description.</param>
+        /// <param name="sort">An optional sort parameter to define the sorting order.</param>
+        /// <returns>A list of organizations with their details and members.</returns>
+        public async Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(string userId,
+            string? keyword, string? sort)
         {
-            var myOrganizations = await (from m in _context.Organizations
-                                 join o in _context.Memberships on m.OrganizationId equals o.OrganizationId
-                                 where o.UserId == userId
-                                 select new OrganizationViewModel
-                                 {
-                                     Organization = m,
-                                     Members = (from mm in _context.Memberships
-                                                where mm.OrganizationId == m.OrganizationId
-                                                select mm).ToList()
-                                 }).ToListAsync();
+            // Validate userId.
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException("UserId is required", nameof(userId));
+            }
 
-            return myOrganizations;
+            var myOrganizations = from m in _context.Organizations
+                                  join o in _context.Memberships on m.OrganizationId equals o.OrganizationId
+                                  where o.UserId == userId
+                                  select new OrganizationViewModel
+                                  {
+                                      Organization = m,
+                                      Members = (from mm in _context.Memberships
+                                                 where mm.OrganizationId == m.OrganizationId
+                                                 select mm).ToList()
+                                  };
+
+            // Filter and sort.
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                myOrganizations = myOrganizations
+                    .Where(o => o.Organization.OrganizationName.ToLower().Contains(keyword.ToLower()) ||
+                                o.Organization.OrganizationDescription.ToLower().Contains(keyword.ToLower()));
+            }
+
+            // Apply sorting based on the provided sort parameter.
+            myOrganizations = sort switch
+            {
+                "name_asc" => myOrganizations.OrderBy(o => o.Organization.OrganizationName),
+                "name_desc" => myOrganizations.OrderByDescending(o => o.Organization.OrganizationName),
+                "created_asc" => myOrganizations.OrderBy(o => o.Organization.Created),
+                "created_desc" => myOrganizations.OrderByDescending(o => o.Organization.Created),
+                _ => myOrganizations.OrderByDescending(o => o.Organization.Created) // Default sorting: by creation date descending.
+            };
+
+            // Execute the query and return the results as a list.
+            return await myOrganizations.ToListAsync();
         }
 
         /// <summary>
