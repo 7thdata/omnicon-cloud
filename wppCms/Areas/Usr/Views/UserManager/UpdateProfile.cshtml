@@ -1,0 +1,25 @@
+@using wppCms.Areas.Usr.Models
+@model UsrUserManagementUpdateProfileViewModel
+
+@{
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Update Profile";
+}
+
+<div class="container">
+
+    <h2>Update Profile</h2>
+
+    <form method="post">
+        <div class="form-group">
+            <label for="NickName">Display Name</label>
+            <input asp-for="NickName" class="form-control" name="NickName" value="@Model.NickName" />
+            <span asp-validation-for="NickName" class="text-danger"></span>
+        </div>
+
+        <div class="py-3">
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </div>
+
+    </form>
+</div>

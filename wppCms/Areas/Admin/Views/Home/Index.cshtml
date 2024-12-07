@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col text-center">
+            <h1>Welcome to the OmniCon Admin Dashboard</h1>
+            <p class="lead">Manage users, articles, files, and settings with ease.</p>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-3 text-center">
+            <a href="/admin/users" class="btn btn-primary btn-lg w-100">
+                <span class="material-icons">people</span>
+                <div>Manage Users</div>
+            </a>
+        </div>
+        <div class="col-md-3 text-center">
+            <a href="/admin/articles" class="btn btn-primary btn-lg w-100">
+                <span class="material-icons">article</span>
+                <div>Manage Articles</div>
+            </a>
+        </div>
+        <div class="col-md-3 text-center">
+            <a href="/admin/files" class="btn btn-primary btn-lg w-100">
+                <span class="material-icons">folder</span>
+                <div>Manage Files</div>
+            </a>
+        </div>
+        <div class="col-md-3 text-center">
+            <a href="/admin/settings" class="btn btn-primary btn-lg w-100">
+                <span class="material-icons">settings</span>
+                <div>Settings</div>
+            </a>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-3 text-center">
+                <a href="/admin/users/roles" class="btn btn-primary btn-lg w-100">
+                    <span class="material-icons">admin_panel_settings</span>
+                    <div>Manage Roles</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,183 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrAuthorsIndexViewModel
+
+@{
+    ViewData["Title"] = "Authors";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+<div class="container my-5">
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>@ViewData["Title"]</h1>
+        </div>
+        <div>
+            <!-- Button to trigger modal for adding a new author -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAuthorModal">
+                Add New Author
+            </button>
+        </div>
+    </div>
+ 
+    @if(TempData["Message"] != null)
+    {
+        <div class="alert alert-success mt-3" role="alert">
+            @TempData["Message"]
+        </div>
+    }
+
+    <hr />
+    @if (Model.Authors.Count > 0)
+    {
+        <div class="row">
+            @foreach (var item in Model.Authors)
+            {
+                <div class="col-md-3 col-6">
+                    <div class="card">
+                        <img src="@item.ProfileImageUrl" class="card-img-top" />
+                        <div class="card-body">
+                            <h4 class="font-lg">@item.Title</h4>
+                            <div>@item.Text</div>
+                            <!-- Edit button triggers modal for each author -->
+                            <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal"
+                                    data-bs-target="#editAuthorModal-@item.RowKey">
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal for Editing Author -->
+                <div class="modal fade" id="editAuthorModal-@item.RowKey" tabindex="-1" aria-labelledby="editAuthorModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editAuthorModalLabel">Edit Author</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Edit Author Form -->
+                                <form action="/@Model.Culture/usr/author/edit/@item.RowKey" method="post">
+                                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="channelId-@item.RowKey" class="form-label">Select Channel</label>
+                                        <select class="form-select" id="channelId-@item.RowKey" name="channelId" required>
+                                            <option value="" disabled>Select a channel</option>
+                                            @foreach (var channel in Model.Channels)
+                                            {
+                                                <option value="@channel.Channel.Id" @(channel.Channel.Id == item.ChannelId ? "selected" : "")>
+                                                    @channel.Channel.Title
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="authorTitle-@item.RowKey" class="form-label">Author Name</label>
+                                        <input type="text" class="form-control" id="authorTitle-@item.RowKey" required name="title" value="@item.Title">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="authorPermaName-@item.RowKey" class="form-label">PermaName (Unique)</label>
+                                        <input type="text" class="form-control" id="authorPermaName-@item.RowKey" required name="permaName" value="@item.PermaName"
+                                               pattern="[a-z0-9\-]+"
+                                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="authorProfileImage-@item.RowKey" class="form-label">Profile Image URL</label>
+                                        <input type="text" class="form-control" id="authorProfileImage-@item.RowKey" name="profileImageUrl" value="@item.ProfileImageUrl">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="authorText-@item.RowKey" class="form-label">Introduction</label>
+                                        <textarea class="form-control" id="authorText-@item.RowKey" name="text" required>@item.Text</textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="publishSince-@item.RowKey" class="form-label">Publish Since</label>
+                                        <input type="date" class="form-control" id="publishSince-@item.RowKey" required name="publishSince" value="@item.PublishSince.ToString("yyyy-MM-dd")">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="publishUntil-@item.RowKey" class="form-label">Publish Until (Optional)</label>
+                                        <input type="date" class="form-control" id="publishUntil-@item.RowKey" name="publishUntil" value="@item.PublishUntil?.ToString("yyyy-MM-dd")">
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p>No authors found.</p>
+    }
+</div>
+
+<!-- Modal for Adding Author -->
+<div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAuthorModalLabel">Add New Author</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Add Author Form -->
+                <form action="/@Model.Culture/usr/author/create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label for="channelId" class="form-label">Select Channel</label>
+                        <select class="form-select" id="channelId" name="ChannelId" required>
+                            <option value="" disabled selected>Select a channel</option>
+                            @foreach (var channel in Model.Channels)
+                            {
+                                <option value="@channel.Channel.Id">@channel.Channel.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="authorTitle" class="form-label">Author Name</label>
+                        <input type="text" class="form-control" id="authorTitle" required name="Title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="authorPermaName" class="form-label">PermaName (Unique)</label>
+                        <input type="text" class="form-control" id="authorPermaName" required name="PermaName" required
+                               pattern="[a-z0-9\-]+"
+                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                        <span asp-validation-for="PermaName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="authorProfileImage" class="form-label">Profile Image URL</label>
+                        <input type="text" class="form-control" id="authorProfileImage" name="ProfileImageUrl">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="authorText" class="form-label">Introduction</label>
+                        <textarea class="form-control" id="authorText" required name="Text"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="publishSince" class="form-label">Publish Since</label>
+                        <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@DateTimeOffset.UtcNow.ToString("yyyy-MM-dd")" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="publishUntil" class="form-label">Publish Until (Optional)</label>
+                        <input type="date" class="form-control" id="publishUntil" value="@DateTimeOffset.UtcNow.AddYears(30).ToString("yyyy-MM-dd")" required name="PublishUntil">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Author</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

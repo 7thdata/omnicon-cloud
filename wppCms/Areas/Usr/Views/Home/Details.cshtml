@@ -1,0 +1,257 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrHomeChannelDetailsViewModel
+
+@{
+    ViewData["Title"] = "Channel - " + Model.Channel.Channel.Title;
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/usr">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+
+    <div class="row">
+        <div class="col-md-6">
+
+            <h1>@Model.Channel.Channel.Title</h1>
+            <p>
+                @Model.Channel.Channel.Description
+            </p>
+            <p>
+                @if (Model.Channel.Channel.IsPublic)
+                {
+                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName">Public</a>
+                }
+                else
+                {
+                    <span>Private</span>
+                }
+            </p>
+            <!-- Edit and Delete Buttons for the Channel -->
+            <div class="d-flex justify-content-end">
+                <div class="mx-1">
+                    <button type="button" class="btn btn-success d-flex align-items-center" data-bs-toggle="modal"
+                            data-bs-target="#editChannelModal">
+                        Edit Channel
+                    </button>
+                </div>
+                <div class="mx-1">
+                    <form action="/@Model.Culture/usr/channel/delete/@Model.Channel.Channel.Id" method="post"
+                          onsubmit="return confirm('Warning: Deleting this channel will make it inaccessible to all members, including yourself. Articles belonging to this channel will also no longer be accessible. Additionally, this channel will no longer be available through the API. Are you sure you want to proceed?');">
+                        <button type="submit" class="btn btn-danger">Delete Channel</button>
+                    </form>
+                </div>
+            </div>
+
+            <hr />
+
+            <h2 class="font-lg">Authors</h2>
+
+            @if (Model.Channel.Authors != null)
+            {
+                if (Model.Channel.Authors.Any())
+                {
+                    <div class="row">
+                        @foreach (var author in Model.Channel.Authors)
+                        {
+                            <div class="col-4">
+                                <div class="d-flex">
+                                    <img src="@author.ProfileImageUrl"
+                                         class="rounded-circle me-2"
+                                         style="width: 50px; height: 50px;"
+                                         alt="@author.Title" />
+                                    <div>
+                                        @author.Title
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p>No authors found.</p>
+                }
+            }
+            else
+            {
+                <p>No authors found.</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <h2>Members</h2>
+
+            <div class="row">
+                @foreach (var member in Model.Channel.Members)
+                {
+                    <div class="col-4 m-1">
+                        <div class="card">
+                            <img src="@member.User.IconImage" class="card-img-top" />
+                            <div class="card-body">
+                                <h4 class="font-lg">@member.User.NickName</h4>
+                                <p>
+                                    @member.User.Email
+                                </p>
+                                <div class="d-flex d-flex flex-wrap">
+                                    @if (member.Membership.IsOwner)
+                                    {
+                                        <div class="px-1">
+                                            <span class="badge bg-secondary">Owner</span>
+                                        </div>
+
+                                    }
+                                    @if (member.Membership.IsReviewer)
+                                    {
+                                        <div class="px-1">
+                                            <span class="badge bg-secondary">Reviewer</span>
+                                        </div>
+                                    }
+                                    @if (member.Membership.IsEditor)
+                                    {
+                                        <div class="px-1">
+                                            <span class="badge bg-secondary">Editor</span>
+                                        </div>
+                                    }
+
+                                </div>
+                                <hr />
+                                @if (member.Membership.IsRejected)
+                                {
+                                    <div class="px-1">
+                                        <div class="badge bg-danger">Rejected</div>
+                                    </div>
+                                }
+
+                                @if (member.Membership.IsAccepted)
+                                {
+                                    <div class="px-1">
+                                        <div class="badge bg-success">Accepted</div>
+                                    </div>
+                                }
+
+                                @if (member.Membership.IsArchived)
+                                {
+                                    <div class="px-1">
+                                        <div class="badge bg-secondary">Archived</div>
+                                    </div>
+                                }
+
+                                @if (!member.Membership.IsReviewer && !member.Membership.IsAccepted && !member.Membership.IsArchived)
+                                {
+                                    <div class="px-1">
+                                        <div class="badge bg-secondary">Waiting</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <!-- List of Articles in this Channel -->
+    <div class="d-flex justify-content-between align-items-start pt-4">
+        <div>
+            <h2>Articles in Channel</h2>
+        </div>
+        <div>
+            <!-- Button to Create New Article -->
+            <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/create" class="btn btn-primary">
+                Create
+                New Article
+            </a>
+        </div>
+    </div>
+
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Pass</th>
+                <th>Perma Name</th>
+                <th>Article Title</th>
+                <th>Publish Date</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Articles.Any())
+            {
+                @foreach (var article in Model.Articles)
+                {
+                    <tr>
+                        <td>
+                            @article.Folders
+                        </td>
+                        <td><a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/details/@article.RowKey">@article.PermaName</a></td>
+                        <td>@article.Title</td>
+                        <td>@article.PublishSince.ToString("yyyy-MM-dd")</td>
+
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">No articles found.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Editing Channel -->
+<div class="modal fade" id="editChannelModal" tabindex="-1" aria-labelledby="editChannelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editChannelModalLabel">Edit Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Edit Channel Form -->
+                <form action="/@Model.Culture/usr/channel/edit/@Model.Channel.Channel.Id" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label for="channelName" class="form-label">Channel Name</label>
+                        <input type="text" class="form-control" id="channelName" name="Title" value="@Model.Channel.Channel.Title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
+                        <input type="text" class="form-control" id="channelPermaName" name="PermaName" value="@Model.Channel.Channel.PermaName" required
+                               pattern="[a-z0-9\-]+"
+                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                        <span asp-validation-for="PermaName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="channelDescription" name="Description">@Model.Channel.Channel.Description</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="PublicCss" class="form-label">CSS</label>
+                        <textarea class="form-control" id="PublicCss" rows="5" name="PublicCss">@Model.Channel.Channel.PublicCss</textarea>
+                    </div>
+
+                    <!-- Checkbox for IsPublic -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isPublicEdit" value="true" name="isPublic" @(Model.Channel.Channel.IsPublic ? "checked" : "")>
+                        <label class="form-check-label" for="isPublicEdit">Make Channel Public</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Channel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

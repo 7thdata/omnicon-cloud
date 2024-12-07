@@ -1,0 +1,159 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrOrganizationDetailsViewModel
+
+@{
+    ViewData["Title"] = "Organization Details";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1>Organization: @Model.Organization.Organization.OrganizationName</h1>
+        </div>
+        <div>
+            @if (!Model.IsDefaultOrganization)
+            {
+                <form action="/@Model.Culture/usr/organization/setasdefault" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="organizationId" value="@Model.Organization.Organization.OrganizationId" />
+                    <button type="submit" class="btn btn-info">
+                        Set as Default Organization
+                    </button>
+                </form>
+            }
+            else
+            {
+                <span class="badge bg-success">Default Organization</span>
+            }
+        </div>
+    </div>
+    <hr />
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["Message"]
+        </div>
+    }
+
+    <div class="row">
+        <!-- Organization Details Form -->
+        <div class="col-md-7">
+            <form action="/@Model.Culture/usr/organization/upsert" method="post" class="needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="organizationId" value="@Model.Organization.Organization.OrganizationId" />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="organizationName" class="form-label">Organization Name</label>
+                        <input type="text" class="form-control" id="organizationName" name="organizationName"
+                               value="@Model.Organization.Organization.OrganizationName" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="organizationType" class="form-label">Organization Type</label>
+                        <select class="form-control" id="organizationType" name="organizationType" required>
+                            <option value="" disabled>Select an organization type</option>
+                            <option value="Corporate" @(Model.Organization.Organization.OrganizationType == "Corporate" ? "selected" : "")>Corporate</option>
+                            <option value="Non-Profit" @(Model.Organization.Organization.OrganizationType == "Non-Profit" ? "selected" : "")>Non-Profit</option>
+                            <option value="Government" @(Model.Organization.Organization.OrganizationType == "Government" ? "selected" : "")>Government</option>
+                            <option value="Educational" @(Model.Organization.Organization.OrganizationType == "Educational" ? "selected" : "")>Educational</option>
+                            <option value="Other" @(Model.Organization.Organization.OrganizationType == "Other" ? "selected" : "")>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="organizationDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="organizationDescription" name="organizationDescription" rows="4">@Model.Organization.Organization.OrganizationDescription</textarea>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="organizationLogo" class="form-label">Logo URL</label>
+                        <input type="url" class="form-control" id="organizationLogo" name="organizationLogo"
+                               value="@Model.Organization.Organization.OrganizationLogo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="organizationWebsite" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="organizationWebsite" name="organizationWebsite"
+                               value="@Model.Organization.Organization.OrganizationWebsite" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="organizationEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="organizationEmail" name="organizationEmail"
+                               value="@Model.Organization.Organization.OrganizationEmail" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="organizationPhone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="organizationPhone" name="organizationPhone"
+                               value="@Model.Organization.Organization.OrganizationPhone" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="organizationAddress" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="organizationAddress" name="organizationAddress"
+                               value="@Model.Organization.Organization.OrganizationAddress" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="organizationCity" class="form-label">City</label>
+                        <input type="text" class="form-control" id="organizationCity" name="organizationCity"
+                               value="@Model.Organization.Organization.OrganizationCity" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="organizationState" class="form-label">State</label>
+                        <input type="text" class="form-control" id="organizationState" name="organizationState"
+                               value="@Model.Organization.Organization.OrganizationState" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="organizationCountry" class="form-label">Country</label>
+                        <input type="text" class="form-control" id="organizationCountry" name="organizationCountry"
+                               value="@Model.Organization.Organization.OrganizationCountry" required />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Save Organization</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Members List -->
+        <div class="col-md-5">
+            <h5>Members</h5>
+            <ul class="list-group">
+                @if (Model.Organization.Members != null && Model.Organization.Members.Any())
+                {
+                    @foreach (var member in Model.Organization.Members)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong>Member ID:</strong> @member.MemberId<br />
+                                <strong>User ID:</strong> @member.UserId<br />
+                                <strong>Role:</strong> @member.Role<br />
+                                <strong>Status:</strong> @member.Status
+                            </span>
+                            <span>
+                                <button class="btn btn-sm btn-danger">Remove</button>
+                            </span>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li class="list-group-item text-muted">No members found.</li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

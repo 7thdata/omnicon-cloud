@@ -1,0 +1,58 @@
+@using wppCms.Areas.Admin.Models
+@model AdminUsersRolesViewModel
+
+@{
+    ViewData["Title"] = "Roles";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <h1>Manage Roles</h1>
+<hr/>
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Add New Role -->
+            <form action="/admin/users/role/add" method="post">
+
+                <label>Role Name</label>
+
+                <div class="input-group">
+                    <input type="text" class="form-control" id="roleName" name="roleName" required />
+                    <button type="submit" class="btn btn-primary">Add Role</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ViewData["ErrorMessage"]?.ToString()))
+                {
+                    <div class="alert alert-danger mt-3">
+                        @ViewData["ErrorMessage"]
+                    </div>
+                }
+            </form>
+        </div>
+        <div class="col-md-6">
+            <!-- Roles list -->
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Role Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in Model.Roles)
+                    {
+                        <tr>
+                            <td>@role.Name</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

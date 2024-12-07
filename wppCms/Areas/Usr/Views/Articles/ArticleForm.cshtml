@@ -1,0 +1,225 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrArticlesCreateEditViewModel
+
+@{
+    ViewData["Title"] = "ArticleForm";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/usr">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/usr/channel/@Model.ChannelId">Channel</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <h2>@(Model.IsEditMode ? "Edit Article" : "Create New Article")</h2>
+
+    <form action="/@Model.Culture/usr/channel/@Model.ChannelId/article/save" method="post">
+        @Html.AntiForgeryToken()
+
+        <!-- Validation summary for non-field-specific errors -->
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                <strong>Please correct the following errors:</strong>
+                <ul>
+                    @foreach (var entry in ViewData.ModelState)
+                    {
+                        foreach (var error in entry.Value.Errors)
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    }
+                </ul>
+            </div>
+        }
+
+
+        <!-- Conditionally set RowKey for new article -->
+        <input type="hidden" asp-for="RowKey" name="RowKey" value="@(Model.IsEditMode ? Model.RowKey : Guid.NewGuid().ToString())" />
+        <input type="hidden" name="IsEditMode" value="@(Model.IsEditMode ? "true" : "false")" />
+        <input type="hidden" name="channelId" value="@Model.ChannelId" />
+
+
+        <div class="row">
+            <div class="col-md-8 my-2">
+                <div class="mb-3">
+                    <label asp-for="Folders" class="form-label">Path</label>
+                    <input asp-for="Folders" name="Folders" class="form-control" value="@Model.Folders" />
+                    <span asp-validation-for="Folders" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Title</label>
+                    <input asp-for="Title" name="Title" class="form-control" value="@Model.Title" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Text" class="form-label">Text</label>
+                    <textarea asp-for="Text" name="Text" class="form-control" rows="20">@Model.Text</textarea>
+                    <span asp-validation-for="Text" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Description</label>
+                    <textarea asp-for="Description" name="Description" class="form-control" rows="3">@Model.Description</textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="MainImageUrl" class="form-label">MainImageUrl</label>
+                    <input asp-for="MainImageUrl" name="MainImageUrl" class="form-control" value="@Model.MainImageUrl" />
+                    <span asp-validation-for="MainImageUrl" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-4 my-2">
+                <div class="mb-3">
+                    <label asp-for="PermaName" class="form-label">PermaName</label>
+                    <input asp-for="PermaName" name="PermaName" value="@Model.PermaName" class="form-control" />
+                    <span asp-validation-for="PermaName" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="AuthorId" class="form-label">Select Author</label>
+                    <select asp-for="AuthorId" name="AuthorId" class="form-select" required>
+                        <option value="" disabled selected>Select an author</option>
+                        @foreach (var author in Model.Authors)
+                        {
+                            <option value="@author.RowKey" @(author.RowKey == Model.AuthorId ? "selected" : "")>
+                                @author.Title
+                            </option>
+
+                        }
+                    </select>
+                    <span asp-validation-for="AuthorId" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Tags" class="form-label">Tags</label>
+                    <input asp-for="Tags" name="Tags" class="form-control" value="@Model.Tags" />
+                    <span asp-validation-for="Tags" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="PublishSince" class="form-label">Publish Since</label>
+                    <input asp-for="PublishSince" name="PublishSince" class="form-control" type="datetime-local" value="@Model.PublishSince" />
+                    <span asp-validation-for="PublishSince" class="text-danger"></span>
+                    <div>@Model.PublishSince</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PublishUntil" class="form-label">Publish Until</label>
+                    <input asp-for="PublishUntil" name="PublishUntil" class="form-control" type="datetime-local" value="@Model.PublishUntil" />
+                    <span asp-validation-for="PublishUntil" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="ArticleCulture" class="form-label">Culture</label>
+                    <input asp-for="ArticleCulture" name="ArticleCulture" class="form-control" value="@Model.ArticleCulture" />
+                    <span asp-validation-for="ArticleCulture" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        @(Model.IsEditMode ? "Update Article" : "Create Article")
+                    </button>
+                </div>
+
+                <hr />
+
+                <h2>Upload Image</h2>
+                <!-- Drag-and-drop area -->
+                <div id="uploadArea" class="upload-area p-4 border border-primary rounded text-center">
+                    <p>Drag and drop an image here, or click to upload.</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;" />
+                </div>
+
+                <!-- Uploaded Image Preview -->
+                <div id="previewContainer" class="mt-3" style="display: none;">
+                    <h4>Image Uploaded</h4>
+                    <img id="thumbnailPreview" src="" alt="Thumbnail" class="img-thumbnail mb-2" style="max-width: 200px;">
+                    <div>
+                        <strong>URL:</strong> <a id="imageUrl" href="" target="_blank"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </form>
+</div>
+
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const thumbnailPreview = document.getElementById('thumbnailPreview');
+    const imageUrl = document.getElementById('imageUrl');
+
+    // Click to open file input
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // Handle file selection
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            await uploadImage(file);
+        }
+    });
+
+    // Handle drag-and-drop
+    uploadArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        uploadArea.classList.add('border-success');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('border-success');
+    });
+
+    uploadArea.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        uploadArea.classList.remove('border-success');
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            await uploadImage(file);
+        }
+    });
+
+    // Upload image function
+    async function uploadImage(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload a valid image file.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const culture = 'en'; // Change this based on your current culture
+            const channelId = 'your-channel-id'; // Replace with the actual channelId
+            const response = await fetch(`/${culture}/usr/channel/${channelId}/article/upload-asset`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                showPreview(data.thumbnailUrl, data.originalUrl);
+            } else {
+                alert('Failed to upload image.');
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('An error occurred while uploading the image.');
+        }
+    }
+
+    // Show image preview
+    function showPreview(thumbnailUrl, originalUrl) {
+        thumbnailPreview.src = thumbnailUrl;
+        imageUrl.href = originalUrl;
+        imageUrl.textContent = originalUrl;
+        previewContainer.style.display = 'block';
+    }
+</script>

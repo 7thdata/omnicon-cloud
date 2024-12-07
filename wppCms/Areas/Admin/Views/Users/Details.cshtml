@@ -1,0 +1,87 @@
+@using wppCms.Areas.Admin.Models
+@model AdminUsersDetailsViewModel
+
+@{
+    ViewData["Title"] = "User Details";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <h2>@Model.User.UserName (@Model.User.Email)</h2>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <h5>User ID:</h5>
+                <p>@Model.User.Id</p>
+            </div>
+
+            <div class="mb-3">
+                <h5>Email:</h5>
+                <p>@Model.User.Email</p>
+            </div>
+
+            <div class="mb-3">
+                <h5>EmailConfirmed:</h5>
+                <p>@Model.User.EmailConfirmed</p>
+                <div>
+                    <form action="/admin/users/@Model.User.Id/switchemailconfirm" method="post">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-secondary" type="submit">
+                            Switch Email Confirmed
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+
+            <div class="mb-3">
+                <h5>Roles:</h5>
+                <ul>
+                    @foreach (var role in Model.Roles)
+                    {
+                        <li>@role.Name</li>
+                    }
+                </ul>
+            </div>
+            <!-- Action buttons for Edit, Delete, and Back -->
+            <div class="mt-4">
+                <a href="/Admin/Users/Edit/@Model.User.Id" class="btn btn-primary">Edit</a>
+                <a href="/Admin/Users/Delete/@Model.User.Id" class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+
+            </div>
+        </div>
+        <div class="col-md-6">
+            <!-- Assign Role to User -->
+            <div class="mb-3">
+                <h5>Add Role to User</h5>
+
+                <form action="/admin/users/@Model.User.Id/role/addto" method="post">
+
+                    <div class="form-group">
+                        <label for="role">Select Role</label>
+                        <select class="form-control" id="role" name="roleName">
+                            <option value="" disabled selected>Select a role</option>
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                <option value="@role.Name">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success mt-3">Assign Role</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,78 @@
+@using wppCms.Areas.Admin.Models
+@model AdminUsersIndexViewModel
+
+@{
+    ViewData["Title"] = "Users";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+    <h1>Manage Users</h1>
+
+    <!-- Search form -->
+    <form method="get" class="input-group mb-3">
+        <input type="text" name="keyword" class="form-control" placeholder="Search..." value="@Model.Keyword" />
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <!-- Sort options -->
+    <div class="mb-3">
+        <a href="?sort=username_asc&keyword=@Model.Keyword" class="btn btn-link">Sort by Username Ascending</a>
+        <a href="?sort=username_desc&keyword=@Model.Keyword" class="btn btn-link">Sort by Username Descending</a>
+    </div>
+
+    <!-- Users table -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Roles</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var userViewModel in Model.PaginatedUsers.Items)
+            {
+                <tr>
+                    <td>
+                        <a href="/Admin/Users/@userViewModel.User.Id">
+                            @userViewModel.User.Id
+                        </a>
+                    </td>
+                    <td>@userViewModel.User.UserName</td>
+                    <td>@userViewModel.User.Email</td>
+                    <td>
+                        @foreach (var role in userViewModel.Roles)
+                        {
+                            <span>@role.Name</span>
+
+                            <br />
+                        }
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination controls -->
+    <nav>
+        <ul class="pagination">
+            @for (var i = 1; i <= Model.PaginatedUsers.TotalPages; i++)
+            {
+                <li class="page-item @(Model.PaginatedUsers.CurrentPage == i ? "active" : "")">
+                    <a class="page-link"
+                        href="?page=@i&itemsPerPage=@Model.PaginatedUsers.ItemsPerPage&keyword=@Model.Keyword&sort=@Model.Sort">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
