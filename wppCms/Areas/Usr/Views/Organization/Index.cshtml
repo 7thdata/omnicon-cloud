@@ -1,0 +1,61 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrOrganizationIndexViewModel
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Organizations</h1>
+        </div>
+        <div>
+            <a href="/@Model.Culture/usr/organization/create" class="btn btn-primary">Create New Organization</a>
+        </div>
+    </div>
+
+    <hr />
+    @if (Model.Organizations.Count > 0)
+    {
+        <table class="table">
+            <tr>
+                <td>
+                    Name
+                </td>
+                <td>
+                    Type
+                </td>
+                <td>
+                    Members
+                </td>
+            </tr>
+            @foreach (var organization in Model.Organizations)
+            {
+                <tr>
+                    <td>
+                        @if(Model.DefaultOrganizationId == organization.Organization.OrganizationId)
+                        {
+                            <span class="badge bg-success">Default</span><br/>
+                        }
+                        <a href="/@Model.Culture/usr/organization/@organization.Organization.OrganizationId">
+                            @organization.Organization.OrganizationName
+                        </a>
+                    </td>
+                    <td>
+                        @organization.Organization.OrganizationType
+                    </td>
+                    <td>
+                        @organization.Members.Count().ToString("N0")
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            No organizations found.
+        </div>
+    }
+</div>

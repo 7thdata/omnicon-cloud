@@ -1,0 +1,144 @@
+﻿@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<wppCms.Resources.Views.Home.Index> Localizer
+@model HomeIndexViewModel
+@{
+    var title = Localizer["Title"];
+}
+
+@section Header {
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="@Localizer["MetaDescription"]">
+    <meta name="keywords" content="@Localizer["MetaKeywords"]">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="SEVENTH DATA Inc.">
+
+    <!-- Open Graph for social sharing -->
+    <meta property="og:title" content="@Localizer["OgTitle"]">
+    <meta property="og:description" content="@Localizer["OgDescription"]">
+    <meta property="og:image" content="/path/to/your-logo.png">
+    <meta property="og:url" content="https://www.omnicon.cloud">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Cards for Twitter sharing -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@Localizer["TwitterTitle"]">
+    <meta name="twitter:description" content="@Localizer["TwitterDescription"]">
+    <meta name="twitter:image" content="/path/to/your-logo.png">
+}
+
+<div class="bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 my-2">
+                <h1 style="font-size:2em;">@Localizer["MainHeading"]</h1>
+                <p>@Localizer["IntroParagraph"]</p>
+                <div class="py-4 d-flex justify-content-center">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <div class="px-2">
+                            <a href="/en/usr" class="btn btn-secondary rounded-0">
+                                <span class="material-icons">dashboard</span> @Localizer["Dashboard"]
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="px-2">
+                            <a href="/identity/account/register" class="btn btn-secondary rounded-0">
+                                <span class="material-icons">person_add</span> @Localizer["Register"]
+                            </a>
+                        </div>
+                        <div class="px-2">
+                            <a href="/identity/account/login" class="btn btn-secondary rounded-0">
+                                <span class="material-icons">login</span> @Localizer["Login"]
+                            </a>
+                        </div>
+                    }
+                    <div class="px-2">
+                        <a href="/en/c/omnicon-doc-en" class="btn btn-secondary rounded-0">
+                            <span class="material-icons">book</span> @Localizer["Docs"]
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 my-2">
+              
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">code</span> @Localizer["FeatureApiAccessTitle"]</h2>
+            <p>@Localizer["FeatureApiAccessDescription"]</p>
+        </div>
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">speed</span> @Localizer["FeaturePerformanceTitle"]</h2>
+            <p>@Localizer["FeaturePerformanceDescription"]</p>
+        </div>
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">search</span> @Localizer["FeatureSearchTitle"]</h2>
+            <p>@Localizer["FeatureSearchDescription"]</p>
+        </div>
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">storage</span> @Localizer["FeatureStorageTitle"]</h2>
+            <p>@Localizer["FeatureStorageDescription"]</p>
+        </div>
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">description</span> @Localizer["FeatureDeveloperCentricTitle"]</h2>
+            <p>@Localizer["FeatureDeveloperCentricDescription"]</p>
+        </div>
+        <div class="col-md-4 my-2">
+            <h2><span class="material-icons">settings</span> @Localizer["FeatureScalableTitle"]</h2>
+            <p>@Localizer["FeatureScalableDescription"]</p>
+        </div>
+    </div>
+</div>
+
+
+<div class="container py-4">
+    <h2 class="text-center pt-5" style="font-weight:600">@Localizer["PricingHeading"]</h2>
+    <p class="text-center">@Localizer["PricingSubHeading"]</p>
+    <div class="row">
+        <div class="col-md-4 my-2 p-2">
+            <div class="bg-light rounded-2 py-4">
+                <h3 class="text-center">@Localizer["FreePlan"]</h3>
+                <ul class="list-unstyled text-center">
+                    <li>@Localizer["FreeFeature"]</li>
+                    <li>@Localizer["FreeApiCalls"]</li>
+                </ul>
+                <h3 class="text-center">US$0/mo</h3>
+            </div>
+        </div>
+        <div class="col-md-4 my-2 p-2">
+            <div class="bg-light rounded-2 py-4">
+                <h3 class="text-center">@Localizer["BasicPlan"]</h3>
+                <ul class="list-unstyled text-center">
+                    <li>@Localizer["BasicFeature"]</li>
+                    <li>@Localizer["BasicApiCalls"]</li>
+                </ul>
+                <h3 class="text-center">US$9.99/mo</h3>
+            </div>
+        </div>
+        <div class="col-md-4 my-2 p-2">
+            <div class="bg-light rounded-2 py-4">
+                <h3 class="text-center">@Localizer["PremiumPlan"]</h3>
+                <ul class="list-unstyled text-center">
+                    <li>@Localizer["PremiumFeature"]</li>
+                    <li>@Localizer["PremiumApiCalls"]</li>
+                </ul>
+                <h3 class="text-center">US$29.99/mo</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript" src="/js/slick.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.slide-tutorial').slick({ dots: true });
+        });
+    </script>
+}

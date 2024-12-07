@@ -1,0 +1,36 @@
+/* Import Inter Font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+/* Use Montserrat for the logo */
+.logo {
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Logo-sub with existing Russo One font */
+.logo-sub {
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Larger font size */
+.font-lg {
+    font-size: 1.5em;
+}
+
+/* Smaller font size */
+.font-sm {
+    font-size: 0.8em;
+}
+
+/* Add margin for the main content */
+main {
+    margin-top: 50px;
+}
+
+.material-symbols-outlined {
+    font-size: 20px; /* Adjust size */
+    vertical-align: middle; /* Align with text */
+    margin-right: 3px; /* Add consistent spacing */
+}

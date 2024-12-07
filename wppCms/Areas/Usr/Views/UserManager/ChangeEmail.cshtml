@@ -1,0 +1,19 @@
+@using wppCms.Areas.Usr.Models
+@model UsrUserManagementChangeEmailViewModel
+
+@{
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Change Email";
+}
+
+<h2>Change Email Address</h2>
+
+<form method="post" action="/@Model.Culture/usr/change-email">
+    <div class="form-group">
+        <label for="newEmail">New Email Address</label>
+        <input type="email" name="newEmail" class="form-control" required />
+    </div>
+    <div class="py-3">
+        <button type="submit" class="btn btn-primary">Change Email</button>
+    </div>
+</form>

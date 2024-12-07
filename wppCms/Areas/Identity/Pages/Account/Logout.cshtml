@@ -1,0 +1,36 @@
+﻿@page
+@model LogoutModel
+@{
+    Layout = "_LayoutClean"; // Assuming you're using the same layout for consistency
+    ViewData["Title"] = "Log out";
+}
+
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4 py-4">
+        <section>
+            <h2 class="text-center logo-sub py-4">OmniCon</h2>
+            <h3 class="text-center">@ViewData["Title"]</h3>
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/", new { area = "" })" method="post" class="text-center">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Click here to Logout</button>
+                </form>
+            }
+            else
+            {
+                <p class="text-center">You have successfully logged out.</p>
+                <div class="text-center">
+                    <a href="/Login" class="btn btn-primary w-50">Back to Login</a>
+                </div>
+            }
+        </section>
+    </div>
+    <div class="col-md-4"></div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

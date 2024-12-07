@@ -1,0 +1,16 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrSettingsIndexViewModel
+@{
+    ViewData["Title"] = "Settings";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+
+    <div class="row">
+        <div class="col-md-4 my-2">
+            <a href="/@Model.Culture/usr/organizations" class="btn btn-secondary">Organizations</a>
+        </div>
+        <div class="col-md-4 my-2"></div>
+    </div>
+</div>

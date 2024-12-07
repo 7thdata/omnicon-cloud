@@ -1,0 +1,103 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrHomeIndexViewModel
+
+@{
+    ViewData["Title"] = "User Dashboard";
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col text-center">
+            <h1>Welcome to Your CMS Dashboard</h1>
+            <p class="lead">Manage your articles, profiles, storage, and more with ease.</p>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h2>Your Channels</h2>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-success d-flex align-items-center" data-bs-toggle="modal"
+                        data-bs-target="#addChannelModal">
+                        <span class="material-icons me-2">add</span> Create New Channel
+                    </button>
+                </div>
+            </div>
+
+            <table class="table mt-3">
+                <thead>
+                    <tr>
+                        <th>Display Name</th>
+                        <th>Perma Name</th>
+                        <th>Articles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var channelViewModel in Model.Channels.Items)
+                    {
+                        <tr>
+                            <td>@channelViewModel.Channel.Title</td> <!-- Access Title through Channel -->
+                            <td>
+                                <a href="/@Model.Culture/usr/channel/@channelViewModel.Channel.Id"> <!-- Access RowKey through Channel -->
+                                    @channelViewModel.Channel.PermaName <!-- Access PermaName through Channel -->
+                                </a>
+                            </td>
+                            <td>
+                                @channelViewModel.Channel.ArticleCount.ToString("N0")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding Channel -->
+<div class="modal fade" id="addChannelModal" tabindex="-1" aria-labelledby="addChannelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addChannelModalLabel">Add New Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Add Channel Form -->
+                <form action="/@Model.Culture/usr/channel/add" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                  
+                    <div class="mb-3">
+                        <label for="channelName" class="form-label">Channel Name</label>
+                        <input type="text" class="form-control" id="channelName" name="Title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
+                        <input type="text" class="form-control" id="channelPermaName" name="PermaName" required
+                            pattern="[a-z0-9\-]+"
+                            title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                        <span asp-validation-for="PermaName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="channelDescription" name="Description"></textarea>
+                    </div>
+
+                    <!-- New Checkbox for IsPublic -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isPublic" name="IsPublic">
+                        <label class="form-check-label" for="isPublic">Make Channel Public</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Channel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

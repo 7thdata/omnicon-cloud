@@ -1,0 +1,47 @@
+@using wppCms.Areas.Usr.Models
+@model UsrUserManagementIndexViewModel
+@{
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Profile";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 my-2">
+            <h2>Your Profile</h2>
+
+            <!-- Display password change success message if available -->
+            @if (TempData["PasswordChangeSuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["PasswordChangeSuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["EmailChangeSuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["EmailChangeSuccessMessage"]
+                </div>
+            }
+
+            <p><strong>Display Name:</strong> @Model.User.NickName</p>
+            <p><strong>Email:</strong> @Model.User.Email</p>
+            <p><strong>Joined:</strong> @Model.User.CreatedOn</p>
+
+            <div class="py-4">
+                <a href="/@Model.Culture/usr/update-profile" class="m-1 btn btn-secondary">Update Profile</a>
+                <a href="/@Model.Culture/usr/change-password" class="m-1 btn btn-secondary">Change Password</a>
+                <a href="/@Model.Culture/usr/change-email" class="m-1 btn btn-secondary">Change Email</a>
+            </div>
+        </div>
+        <div class="col-md-4 my-2"></div>
+        <div class="col-md-4 my-2">
+            <form action="/Identity/Account/Logout" asp-controller="Account" method="post" class="nav-item">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-secondary" style="text-decoration:none;">Logout</button>
+            </form>
+        </div>
+    </div>
+   
+</div>

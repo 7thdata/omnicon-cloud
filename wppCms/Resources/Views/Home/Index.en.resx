@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Title" xml:space="preserve">
+    <value>OmniCon – Access Your Content from Anywhere</value>
+  </data>
+  <data name="MetaDescription" xml:space="preserve">
+    <value>OmniCon is a fast, flexible headless CMS that allows you to manage and deliver content via API. Suitable for developers, it supports raw JSON files, blog articles, and more.</value>
+  </data>
+  <data name="MetaKeywords" xml:space="preserve">
+    <value>OmniCon, headless CMS, content management, API content, flexible CMS, raw JSON CMS, blog CMS, content delivery, scalable CMS</value>
+  </data>
+  <data name="OgTitle" xml:space="preserve">
+    <value>OmniCon – Access Your Content from Anywhere</value>
+  </data>
+  <data name="OgDescription" xml:space="preserve">
+    <value>OmniCon is a fast and flexible headless CMS with powerful API access. Manage your content seamlessly and deliver it across any platform.</value>
+  </data>
+  <data name="TwitterTitle" xml:space="preserve">
+    <value>OmniCon – Fast &amp; Flexible Headless CMS</value>
+  </data>
+  <data name="TwitterDescription" xml:space="preserve">
+    <value>Manage your content with OmniCon and deliver it via API to any platform. Store blog articles, raw JSON, and more.</value>
+  </data>
+  <data name="MainHeading" xml:space="preserve">
+    <value>OmniCon – Fast &amp; Flexible Headless CMS</value>
+  </data>
+  <data name="IntroParagraph" xml:space="preserve">
+    <value>OmniCon lets you manage your content effortlessly and access it anywhere. With our powerful API, you can store and serve anything from blog articles to raw JSON files, making content integration seamless and flexible.</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Go to Dashboard</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="Docs" xml:space="preserve">
+    <value>Docs</value>
+  </data>
+  <data name="FeatureApiAccessTitle" xml:space="preserve">
+    <value>Full API Access</value>
+  </data>
+  <data name="FeatureApiAccessDescription" xml:space="preserve">
+    <value>Manage and retrieve any type of content—articles, media, or raw JSON files—through our powerful API, enabling seamless integration with any platform.</value>
+  </data>
+  <data name="FeaturePerformanceTitle" xml:space="preserve">
+    <value>Lightning Fast Performance</value>
+  </data>
+  <data name="FeaturePerformanceDescription" xml:space="preserve">
+    <value>Optimized for speed, OmniCon delivers quick response times for fast content delivery, keeping your services agile and responsive.</value>
+  </data>
+  <data name="FeatureSearchTitle" xml:space="preserve">
+    <value>Advanced Search</value>
+  </data>
+  <data name="FeatureSearchDescription" xml:space="preserve">
+    <value>Find and manage your content easily, even in large datasets, with our robust search functionality.</value>
+  </data>
+  <data name="FeatureStorageTitle" xml:space="preserve">
+    <value>Unlimited Storage</value>
+  </data>
+  <data name="FeatureStorageDescription" xml:space="preserve">
+    <value>Store as much content as you need, from blog articles to structured data, without worrying about hitting storage limits.</value>
+  </data>
+  <data name="FeatureDeveloperCentricTitle" xml:space="preserve">
+    <value>Developer-Centric</value>
+  </data>
+  <data name="FeatureDeveloperCentricDescription" xml:space="preserve">
+    <value>Our detailed documentation and API samples help you integrate OmniCon into your tech stack with ease, no matter the language you code in.</value>
+  </data>
+  <data name="FeatureScalableTitle" xml:space="preserve">
+    <value>Customizable &amp; Scalable</value>
+  </data>
+  <data name="FeatureScalableDescription" xml:space="preserve">
+    <value>OmniCon grows with you. Easily customize the platform to meet your specific needs, and scale effortlessly as your content demands increase.</value>
+  </data>
+  <data name="PricingHeading" xml:space="preserve">
+    <value>Pricing</value>
+  </data>
+  <data name="PricingSubHeading" xml:space="preserve">
+    <value>OmniCon offers free access for light users, and flexible pricing for those needing higher API call limits.</value>
+  </data>
+  <data name="FreePlan" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="FreeFeature" xml:space="preserve">
+    <value>All functionalities</value>
+  </data>
+  <data name="FreeApiCalls" xml:space="preserve">
+    <value>10,000 API calls per month</value>
+  </data>
+  <data name="BasicPlan" xml:space="preserve">
+    <value>Basic</value>
+  </data>
+  <data name="BasicFeature" xml:space="preserve">
+    <value>Access to essential features</value>
+  </data>
+  <data name="BasicApiCalls" xml:space="preserve">
+    <value>50,000 API calls per month</value>
+  </data>
+  <data name="PremiumPlan" xml:space="preserve">
+    <value>Premium</value>
+  </data>
+  <data name="PremiumFeature" xml:space="preserve">
+    <value>All features plus priority support</value>
+  </data>
+  <data name="PremiumApiCalls" xml:space="preserve">
+    <value>Unlimited API calls per month</value>
+  </data>
+</root>
