@@ -136,7 +136,7 @@ namespace wppCms.Areas.Usr.Controllers
 
 
         [Route("/{culture}/usr/channel/{channelId}")]
-        public async Task<IActionResult> Details(string culture, string channelId)
+        public async Task<IActionResult> Details(string culture, string channelId, string keyword)
         {
             var userId = _userManager.GetUserId(User);
 
@@ -148,7 +148,7 @@ namespace wppCms.Areas.Usr.Controllers
             }
 
             // Fetch the list of articles for the channel
-            var articles = await _articleServices.GetArticlesByChannelIdAsync(userId, channelId);
+            var articles = await _articleServices.SearchArticlesAsync(channel.Channel.Id,keyword,1,10, "publishdate");
 
             // Build the view model
             var viewModel = new UsrHomeChannelDetailsViewModel

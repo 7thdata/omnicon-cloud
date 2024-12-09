@@ -23,7 +23,7 @@ namespace wppCms.Areas.Usr.Models
     {
 
         public ChannelViewModel Channel { get; set; }
-        public List<ArticleModel> Articles { get; set; } = new List<ArticleModel>(); // Default initialization
+        public PaginationModel<ArticleModel> Articles { get; set; }
     }
 
     public class UsrHomeArticleDetailsViewModel : PageViewModel

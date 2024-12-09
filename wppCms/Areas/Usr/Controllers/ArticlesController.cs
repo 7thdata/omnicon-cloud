@@ -16,13 +16,15 @@ namespace wppCms.Areas.Usr.Controllers
         private readonly IAuthorServices _authorServices;
         private readonly UserManager<UserModel> _userManager;
         private readonly IBlobStorageServices _blobStorageServices;
+        private readonly ILogger<ArticlesController> _logger;
 
-        public ArticlesController(IArticleServices articleServices, IAuthorServices authorServices, UserManager<UserModel> userManager, IBlobStorageServices blobStorageServices)
+        public ArticlesController(IArticleServices articleServices, IAuthorServices authorServices, UserManager<UserModel> userManager, IBlobStorageServices blobStorageServices, ILogger<ArticlesController> logger)
         {
             _articleServices = articleServices;
             _authorServices = authorServices;
             _userManager = userManager;
             _blobStorageServices = blobStorageServices;
+            _logger = logger;
         }
 
         [Route("/{culture}/usr/channel/{channelId}/article/create")]
@@ -235,19 +237,91 @@ namespace wppCms.Areas.Usr.Controllers
         }
 
         [HttpPost]
-        [Route("/{culture}/usr/channel/{channelId}/article/upload-asset")]
-        public async Task<IActionResult> UploadImage(IFormFile file)
+        [Route("/{culture}/usr/channel/{channelId}/article/upload-assets")]
+        public async Task<IActionResult> UploadImages(List<IFormFile> files)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+            // Validate the files collection
+            if (files == null || files.Count == 0)
+            {
+                _logger.LogWarning("No files were uploaded.");
+                return BadRequest(new { message = "No files uploaded." });
+            }
 
-            var contentType = file.ContentType;
-            var fileName = Path.GetFileName(file.FileName);
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB limit
+            var allowedContentTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+            var uploadResults = new List<object>();
 
-            using var stream = file.OpenReadStream();
-            var (originalUrl, thumbnailUrl) = await _blobStorageServices.UploadImageWithThumbnailAsync(stream, fileName, contentType);
+            foreach (var file in files)
+            {
+                // Skip invalid or empty files
+                if (file.Length == 0)
+                {
+                    _logger.LogWarning("Skipping empty file: {FileName}", file.FileName);
+                    continue;
+                }
 
-            return Ok(new { originalUrl, thumbnailUrl });
+                if (file.Length > maxFileSize)
+                {
+                    _logger.LogWarning("File {FileName} exceeds size limit.", file.FileName);
+                    return BadRequest(new { message = $"File size for {file.FileName} exceeds the 5MB limit." });
+                }
+
+                if (!allowedContentTypes.Contains(file.ContentType))
+                {
+                    _logger.LogWarning("Unsupported content type for file: {FileName}", file.FileName);
+                    return BadRequest(new { message = $"Unsupported file type for {file.FileName}." });
+                }
+
+                var fileName = Path.GetFileName(file.FileName);
+
+                try
+                {
+                    using var stream = file.OpenReadStream();
+
+                    // Optional: Validate the file's MIME type using its content
+                    if (!IsValidImageFile(stream))
+                    {
+                        _logger.LogWarning("Invalid image content for file: {FileName}", fileName);
+                        return BadRequest(new { message = $"Invalid image file: {fileName}" });
+                    }
+
+                    // Upload file to blob storage and generate URLs
+                    var (originalUrl, thumbnailUrl) = await _blobStorageServices.UploadImageWithThumbnailAsync(stream, fileName, file.ContentType);
+
+                    if (string.IsNullOrWhiteSpace(originalUrl) || string.IsNullOrWhiteSpace(thumbnailUrl))
+                    {
+                        _logger.LogError("Generated URLs are null or empty for file: {FileName}", fileName);
+                        return StatusCode(500, new { message = $"Failed to generate URLs for {fileName}" });
+                    }
+
+                    // Add the result to the upload results list
+                    uploadResults.Add(new { fileName, originalUrl, thumbnailUrl });
+                    _logger.LogInformation("File {FileName} uploaded successfully.", fileName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while uploading file: {FileName}", fileName);
+                    return StatusCode(500, new { message = $"An error occurred while uploading {fileName}." });
+                }
+            }
+
+            if (uploadResults.Count == 0)
+            {
+                _logger.LogWarning("No valid files were processed.");
+                return BadRequest(new { message = "No valid files were uploaded." });
+            }
+
+            return Ok(uploadResults);
+        }
+
+        // Helper method to validate image file content
+        private bool IsValidImageFile(Stream stream)
+        {
+            // Example: Check JPEG magic numbers (you can expand this for more file types)
+            byte[] buffer = new byte[4];
+            stream.Read(buffer, 0, 4);
+            stream.Seek(0, SeekOrigin.Begin); // Reset stream position
+            return buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF;
         }
     }
 }
