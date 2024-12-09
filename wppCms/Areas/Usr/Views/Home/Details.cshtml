@@ -25,7 +25,7 @@
             <p>
                 @if (Model.Channel.Channel.IsPublic)
                 {
-                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName">Public</a>
+                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" target="_blank">Public</a>
                 }
                 else
                 {
@@ -178,13 +178,12 @@
                 <th>Perma Name</th>
                 <th>Article Title</th>
                 <th>Publish Date</th>
-
             </tr>
         </thead>
         <tbody>
-            @if (Model.Articles.Any())
+            @if (Model.Articles.TotalItems > 0)
             {
-                @foreach (var article in Model.Articles)
+                @foreach (var article in Model.Articles.Items)
                 {
                     <tr>
                         <td>

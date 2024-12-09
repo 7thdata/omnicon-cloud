@@ -6,6 +6,35 @@
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+    .image-wrapper {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .img-thumbnail {
+        max-width: 150px;
+        height: auto;
+        margin-right: 10px;
+    }
+
+    .url-container {
+        display: flex;
+        align-items: center;
+    }
+
+        .url-container a {
+            text-decoration: none;
+            color: #007bff;
+            word-break: break-all;
+        }
+
+        .url-container button {
+            margin-left: 10px;
+        }
+</style>
+
 <div class="container">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -133,12 +162,11 @@
                     <input type="file" id="fileInput" accept="image/*" style="display: none;" />
                 </div>
 
-                <!-- Uploaded Image Preview -->
+                <!-- Uploaded Image Previews -->
                 <div id="previewContainer" class="mt-3" style="display: none;">
-                    <h4>Image Uploaded</h4>
-                    <img id="thumbnailPreview" src="" alt="Thumbnail" class="img-thumbnail mb-2" style="max-width: 200px;">
-                    <div>
-                        <strong>URL:</strong> <a id="imageUrl" href="" target="_blank"></a>
+                    <h4>Uploaded Images</h4>
+                    <div id="imageList">
+                        <!-- Dynamically added images and URLs will appear here -->
                     </div>
                 </div>
             </div>
@@ -147,79 +175,171 @@
 
     </form>
 </div>
-
 <script>
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    const previewContainer = document.getElementById('previewContainer');
-    const thumbnailPreview = document.getElementById('thumbnailPreview');
-    const imageUrl = document.getElementById('imageUrl');
+    document.addEventListener("DOMContentLoaded", () => {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const imageList = document.getElementById('imageList');
 
-    // Click to open file input
-    uploadArea.addEventListener('click', () => fileInput.click());
+        // Open file input on click
+        uploadArea.addEventListener('click', () => fileInput.click());
 
-    // Handle file selection
-    fileInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            await uploadImage(file);
+        // Handle file selection
+        fileInput.addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length) {
+                await processFiles(files);
+            }
+        });
+
+        // Handle drag-and-drop functionality
+        uploadArea.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            uploadArea.classList.add('border-success');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('border-success');
+        });
+
+        uploadArea.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            uploadArea.classList.remove('border-success');
+            const files = Array.from(event.dataTransfer.files);
+            if (files.length) {
+                await processFiles(files);
+            }
+        });
+
+        // Process multiple files
+        async function processFiles(files) {
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    await uploadImage(file);
+                } else {
+                    alert(`Invalid file type: ${file.name}`);
+                }
+            }
         }
-    });
 
-    // Handle drag-and-drop
-    uploadArea.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        uploadArea.classList.add('border-success');
-    });
+        // Upload an individual image
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('files', file); // Ensure key matches server-side parameter name
 
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('border-success');
-    });
+            try {
+                const culture = '@Model.Culture';
+                const channelId = '@Model.ChannelId';
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-    uploadArea.addEventListener('drop', async (event) => {
-        event.preventDefault();
-        uploadArea.classList.remove('border-success');
-        const file = event.dataTransfer.files[0];
-        if (file) {
-            await uploadImage(file);
+                const response = await fetch(`/${culture}/usr/channel/${channelId}/article/upload-assets`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // If server returns an array, loop through and add previews
+                    if (Array.isArray(data)) {
+                        data.forEach((item) => addPreview(item.thumbnailUrl, item.originalUrl));
+                    } else {
+                        // Handle single file case
+                        addPreview(data.thumbnailUrl, data.originalUrl);
+                    }
+                } else {
+                    const errorMessage = await response.text();
+                    console.error('Upload failed:', errorMessage);
+                    alert(`Failed to upload ${file.name}: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert(`An error occurred while uploading ${file.name}`);
+            }
         }
-    });
 
-    // Upload image function
-    async function uploadImage(file) {
-        if (!file.type.startsWith('image/')) {
-            alert('Please upload a valid image file.');
-            return;
-        }
+        function addPreview(thumbnailUrl, originalUrl) {
+            const imageWrapper = document.createElement('div');
+            imageWrapper.classList.add('image-wrapper', 'mb-3');
 
-        const formData = new FormData();
-        formData.append('file', file);
+            // Thumbnail image
+            const img = document.createElement('img');
+            img.src = thumbnailUrl;
+            img.alt = 'Uploaded Image';
+            img.classList.add('img-thumbnail', 'me-2');
 
-        try {
-            const culture = 'en'; // Change this based on your current culture
-            const channelId = 'your-channel-id'; // Replace with the actual channelId
-            const response = await fetch(`/${culture}/usr/channel/${channelId}/article/upload-asset`, {
-                method: 'POST',
-                body: formData
+            // URL container with link and copy button
+            const urlContainer = document.createElement('div');
+            urlContainer.classList.add('url-container');
+
+            const link = document.createElement('a');
+            link.href = originalUrl;
+            link.target = '_blank';
+            link.textContent = originalUrl;
+
+            const copyButton = document.createElement('button');
+            copyButton.textContent = 'Copy URL';
+            copyButton.classList.add('btn', 'btn-sm', 'btn-outline-primary', 'ms-2');
+            copyButton.type = 'button'; // Prevents default form submission behavior
+
+            // Show a toast notification when URL is copied
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(originalUrl).then(() => {
+                    showToast('URL copied to clipboard!');
+                });
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                showPreview(data.thumbnailUrl, data.originalUrl);
-            } else {
-                alert('Failed to upload image.');
-            }
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('An error occurred while uploading the image.');
-        }
-    }
+            // Append elements
+            urlContainer.appendChild(link);
+            urlContainer.appendChild(copyButton);
+            imageWrapper.appendChild(img);
+            imageWrapper.appendChild(urlContainer);
+            imageList.appendChild(imageWrapper);
 
-    // Show image preview
-    function showPreview(thumbnailUrl, originalUrl) {
-        thumbnailPreview.src = thumbnailUrl;
-        imageUrl.href = originalUrl;
-        imageUrl.textContent = originalUrl;
-        previewContainer.style.display = 'block';
-    }
+            // Make the preview container visible
+            previewContainer.style.display = 'block';
+        }
+
+        // Show a toast notification
+        function showToast(message) {
+            // Create a toast container if it doesn't already exist
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.bottom = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '9999';
+                toastContainer.style.maxWidth = '300px';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create a toast message
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.background = '#333';
+            toast.style.color = '#fff';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '5px';
+            toast.style.marginTop = '10px';
+            toast.style.boxShadow = '0px 2px 6px rgba(0, 0, 0, 0.2)';
+            toast.style.opacity = '1';
+            toast.style.transition = 'opacity 0.5s ease';
+
+            // Append the toast message to the container
+            toastContainer.appendChild(toast);
+
+            // Remove the toast after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+    });
+
 </script>
