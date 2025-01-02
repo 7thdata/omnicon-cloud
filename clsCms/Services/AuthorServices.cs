@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
@@ -65,6 +66,32 @@ namespace clsCms.Services
             {
                 return null; // Handle the case where the author is not found
             }
+        }
+
+        /// <summary>
+        /// Get author within the channel by perma name.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="permaName"></param>
+        /// <returns></returns>
+        public async Task<AuthorModel?> GetAuthorByPermaNameAsync(string channelId, string permaName)
+        {
+            // Get all authors first.
+            var authors = new List<AuthorModel>();
+
+            await foreach (var author in _authorTable.QueryAsync<AuthorModel>(a => a.PartitionKey == channelId))
+            {
+                // If includeArchived is true, add all authors.
+                // Otherwise, only add authors that are not archived.
+                if (!author.IsArchived)
+                {
+                    authors.Add(author);
+                }
+            }
+
+            var result = authors.Where(s => s.PermaName == permaName).FirstOrDefault();
+
+            return result;
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using clsCms.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Globalization;
 using wppCms.Areas.Usr.Models;
 
@@ -14,12 +15,14 @@ namespace wppCms.Areas.Usr.Controllers
     {
         private readonly IUserServices _userServices;
         private readonly UserManager<UserModel> _userManager;
+        private readonly AppConfigModel _appConfig;
 
         public OrganizationController(IUserServices userServices,
-            UserManager<UserModel> userManager)
+            UserManager<UserModel> userManager, IOptions<AppConfigModel> appConfig)
         {
             _userServices = userServices;
             _userManager = userManager;
+            _appConfig = appConfig.Value;
         }
 
         /// <summary>
@@ -38,7 +41,8 @@ namespace wppCms.Areas.Usr.Controllers
             {
                 Organizations = myOrganizations,
                 Culture = culture,
-                DefaultOrganizationId = user.OrganizationId
+                DefaultOrganizationId = user.OrganizationId,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);
@@ -66,7 +70,8 @@ namespace wppCms.Areas.Usr.Controllers
             {
                 Organization = organization,
                 Culture = culture,
-                IsDefaultOrganization = isDefaultOrganization
+                IsDefaultOrganization = isDefaultOrganization,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);

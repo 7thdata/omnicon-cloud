@@ -1,0 +1,78 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrAuthorsDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Author.PermaName + " | " + Model.Channel.Channel.PermaName;
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+<div class="container my-5">
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>@ViewData["Title"]</h1>
+        </div>
+
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success mt-3" role="alert">
+            @TempData["Message"]
+        </div>
+    }
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6 my-2">
+            <form action="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/author/edit/@Model.Author.RowKey" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label for="authorTitle" class="form-label">Author Name</label>
+                    <input type="text" class="form-control" value="@Model.Author.Title" id="authorTitle" required name="Title" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="authorPermaName" class="form-label">PermaName (Unique)</label>
+                    <input type="text" class="form-control" id="authorPermaName"
+                           value="@Model.Author.PermaName"
+                           required name="PermaName" required
+                           pattern="[a-z0-9\-]+"
+                           title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                    <span asp-validation-for="PermaName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="authorProfileImage" class="form-label">Profile Image URL</label>
+                    <input type="text" class="form-control" value="@Model.Author.ProfileImageUrl" id="authorProfileImage" name="ProfileImageUrl">
+                </div>
+
+                <div class="mb-3">
+                    <label for="authorText" class="form-label">Introduction</label>
+                    <textarea class="form-control" id="authorText" required name="Text">@Model.Author.Text</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="publishSince" class="form-label">Publish Since</label>
+                    <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@Model.Author.PublishSince.ToString("yyyy-MM-dd")" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="publishUntil" class="form-label">Publish Until (Optional)</label>
+                    <input type="date" class="form-control" id="publishUntil" value="@Model.Author.PublishUntil?.ToString("yyyy-MM-dd")" required name="PublishUntil">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+        <div class="col-md-6 my-2">
+
+            <h2>Channel</h2>
+
+            <hr />
+
+            <h2>Articles</h2>
+        </div>
+    </div>
+
+</div>

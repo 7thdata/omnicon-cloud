@@ -4,6 +4,8 @@ using clsCms.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using System.Threading.Channels;
 using wppCms.Areas.Usr.Models;
 
 namespace wppCms.Areas.Usr.Controllers
@@ -17,14 +19,41 @@ namespace wppCms.Areas.Usr.Controllers
         private readonly UserManager<UserModel> _userManager;
         private readonly IBlobStorageServices _blobStorageServices;
         private readonly ILogger<ArticlesController> _logger;
+        private readonly AppConfigModel _appConfig;
 
-        public ArticlesController(IArticleServices articleServices, IAuthorServices authorServices, UserManager<UserModel> userManager, IBlobStorageServices blobStorageServices, ILogger<ArticlesController> logger)
+        public ArticlesController(IArticleServices articleServices,
+            IAuthorServices authorServices, UserManager<UserModel> userManager,
+            IBlobStorageServices blobStorageServices, ILogger<ArticlesController> logger,
+            IOptions<AppConfigModel> appConfig)
         {
             _articleServices = articleServices;
             _authorServices = authorServices;
             _userManager = userManager;
             _blobStorageServices = blobStorageServices;
             _logger = logger;
+            _appConfig = appConfig.Value;
+        }
+
+        [Route("/{culture}/usr/channel/{channelId}/_articles")]
+        public async Task<IActionResult> _Articles(string culture, string channelId, string keyword, string sort = "publishdate_desc",
+            int currentPage = 1, int itemsPerPage = 100)
+        {
+            // Fetch the list of articles for the channel
+            var articles = await _articleServices.SearchArticlesAsync(
+                channelId: channelId,
+                searchQuery: keyword,
+                currentPage: currentPage,
+                itemsPerPage: itemsPerPage,
+                sort: sort, isPublishDateSensitive: false);
+
+            var view = new UsrArticles_ArticlesViewModel()
+            {
+                Articles = articles,
+                ChannelId = channelId,
+                Culture = culture
+            };
+
+            return PartialView(view);
         }
 
         [Route("/{culture}/usr/channel/{channelId}/article/create")]
@@ -32,7 +61,14 @@ namespace wppCms.Areas.Usr.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
 
-            var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId,_userManager.GetUserId(User), false);
+            var authors = await _authorServices.ListAuthorsByChannelAsync(channelId);
+
+            if (authors.Count == 0)
+            {
+
+                // You have to have at least 1 author.
+                return RedirectToAction("Authors", "Index", new { culture = culture });
+            }
 
             var viewModel = new UsrArticlesCreateEditViewModel
             {
@@ -67,7 +103,7 @@ namespace wppCms.Areas.Usr.Controllers
                     }
                 }
 
-                var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId,_userManager.GetUserId(User), false);
+                var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId, _userManager.GetUserId(User), false);
                 model.Authors = authors;
 
                 return View("ArticleForm", model); // Return view with validation errors
@@ -111,7 +147,7 @@ namespace wppCms.Areas.Usr.Controllers
                 article.PublishSince = publishSince;
                 article.PublishUntil = publishUntil;
                 article.Folders = model.Folders;
-                article.AuthorId = model.AuthorId;  
+                article.AuthorId = model.AuthorId;
 
                 article.Culture = model.ArticleCulture;
 
@@ -158,7 +194,7 @@ namespace wppCms.Areas.Usr.Controllers
                 return NotFound();
             }
 
-            var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId, _userManager.GetUserId(User), false);
+            var authors = await _authorServices.ListAuthorsByChannelAsync(channelId);
 
             var viewModel = new UsrArticlesCreateEditViewModel
             {
@@ -178,12 +214,12 @@ namespace wppCms.Areas.Usr.Controllers
                 IsEditMode = true, // Indicate that this is an edit action,
                 ArticleCulture = article.Culture,
                 Description = article.Description,
-                MainImageUrl = article.MainImageUrl
+                MainImageUrl = article.MainImageUrl,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View("ArticleForm", viewModel); // Use the same view
         }
-
 
         [Route("/{culture}/usr/channel/{channelId}/article/details/{id}")]
         public async Task<IActionResult> Details(string culture, string channelId, string id)
@@ -203,7 +239,8 @@ namespace wppCms.Areas.Usr.Controllers
                 ViewCount = 0,
                 LikeCount = 0,
                 CommentCount = 0,
-                Culture = culture
+                Culture = culture,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View("Details", viewModel); // Use the new Details.cshtml view
@@ -317,11 +354,22 @@ namespace wppCms.Areas.Usr.Controllers
         // Helper method to validate image file content
         private bool IsValidImageFile(Stream stream)
         {
-            // Example: Check JPEG magic numbers (you can expand this for more file types)
-            byte[] buffer = new byte[4];
-            stream.Read(buffer, 0, 4);
-            stream.Seek(0, SeekOrigin.Begin); // Reset stream position
-            return buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF;
+            // Read the first 8 bytes (enough for most file signatures)
+            byte[] buffer = new byte[8];
+            stream.Read(buffer, 0, buffer.Length);
+            stream.Seek(0, SeekOrigin.Begin); // Reset stream position to the start
+
+            // Check for JPEG magic numbers (FF D8 FF)
+            bool isJpeg = buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF;
+
+            // Check for PNG magic numbers (89 50 4E 47)
+            bool isPng = buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47;
+
+            // Check for GIF magic numbers (47 49 46 38)
+            bool isGif = buffer[0] == 0x47 && buffer[1] == 0x49 && buffer[2] == 0x46 && buffer[3] == 0x38;
+
+            // Return true if the file is JPEG, PNG, or GIF
+            return isJpeg || isPng || isGif;
         }
     }
 }

@@ -4,6 +4,7 @@ using clsCms.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
 using System.Security.Policy;
 using wppCms.Areas.Usr.Models;
@@ -17,13 +18,16 @@ namespace wppCms.Areas.Usr.Controllers
         private readonly IAuthorServices _authorServices;
         private readonly UserManager<UserModel> _userManager;
         private readonly IChannelServices _channelServices;
+        private readonly AppConfigModel _appConfig;
 
         public AuthorsController(IAuthorServices authorServices,
-            UserManager<UserModel> userManager, IChannelServices channelServices)
+            UserManager<UserModel> userManager, IChannelServices channelServices,
+            IOptions<AppConfigModel> appConfig)
         {
             _authorServices = authorServices;
             _userManager = userManager;
             _channelServices = channelServices;
+            _appConfig = appConfig.Value;
         }
 
         [Route("/{culture}/usr/authors")]
@@ -44,7 +48,31 @@ namespace wppCms.Areas.Usr.Controllers
             {
                 Authors = authors,
                 Culture = culture,
-                Channels = channels
+                Channels = channels,
+                GaTagId = _appConfig.Ga.TagId
+            };
+
+            return View(view);
+        }
+
+
+        [Route("/{culture}/usr/channel/{channelId}/author/{authorId}")]
+
+        public async Task<IActionResult> Details(string culture, string channelId, string authorId)
+        {
+            var channel = await _channelServices.GetChannelAsync(channelId);
+            var author = await _authorServices.GetAuthorAsync(channelId, authorId);
+
+            if (author == null)
+            {
+                return NotFound();
+            }
+
+            var view = new UsrAuthorsDetailsViewModel()
+            {
+                Author = author,
+                Channel = channel,
+                Culture = culture
             };
 
             return View(view);
@@ -71,9 +99,9 @@ namespace wppCms.Areas.Usr.Controllers
 
         // POST: Edit an existing author
         [HttpPost]
-        [Route("/{culture}/usr/author/edit/{authorId}")]
+        [Route("/{culture}/usr/channel/{channelId}/author/edit/{authorId}")]
         public async Task<IActionResult> Edit(string culture, string channelId, string authorId,
-            string title, string permaName, string profileImageUrl, string text, 
+            string title, string permaName, string profileImageUrl, string text,
             DateTime publishSince, DateTime publishUntil)
         {
             // Get original 
@@ -101,7 +129,7 @@ namespace wppCms.Areas.Usr.Controllers
 
             TempData["Message"] = "Author updated successfully";
 
-            return RedirectToAction("Index", new { culture = culture });
+            return RedirectToAction("Details", new { culture = culture, authorId= authorId, channelId = channelId });
         }
 
         // POST: Soft delete an author (set IsArchived to true)

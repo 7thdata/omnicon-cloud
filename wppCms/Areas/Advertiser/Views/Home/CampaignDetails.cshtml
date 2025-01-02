@@ -1,0 +1,118 @@
+﻿@using wppCms.Areas.Advertiser.Models
+@model AdvertiserHomeCampaignDetailsViewModel
+
+@{
+    ViewData["Title"] = "Campaign Details";
+    Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+}
+
+<div class="container my-5">
+    <h1>Campaign Details</h1>
+
+    <div class="mb-4">
+        <h2>@Model.AdCampaign.Name</h2>
+        <p><strong>Start Date:</strong> @Model.AdCampaign.StartDate.ToString("yyyy-MM-dd")</p>
+        <p><strong>End Date:</strong> @Model.AdCampaign.EndDate.ToString("yyyy-MM-dd")</p>
+        <p><strong>Budget:</strong> @Model.AdCampaign.Budget</p>
+        <p><strong>Status:</strong> @Model.AdCampaign.Status</p>
+        <p><strong>Type:</strong> @Model.AdCampaign.Type</p>
+        <p><strong>Description:</strong> @Model.AdCampaign.Description</p>
+    </div>
+
+    <h3>Ad Groups</h3>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    <!-- Button to trigger modal for creating a new ad group -->
+    <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#createAdGroupModal">
+        Create New Ad Group
+    </button>
+
+    <!-- Modal for creating a new ad group -->
+    <div class="modal fade" id="createAdGroupModal" tabindex="-1" aria-labelledby="createAdGroupLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAdGroupLabel">Create New Ad Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createAdGroupForm" method="post" action="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@Model.AdCampaign.RowKey/adgroup/create">
+                        @Html.AntiForgeryToken()
+                        <div class="form-group mb-3">
+                            <label for="name">Ad Group Name:</label>
+                            <input type="text" id="name" name="Name" class="form-control" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="status">Status:</label>
+                            <select id="status" name="Status" class="form-control" required>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="bid">Bid:</label>
+                            <input type="number" id="bid" name="Bid" class="form-control" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Form for Ad Groups -->
+    <form method="get">
+        <div class="form-group">
+            <label for="keyword">Search Ad Groups:</label>
+            <input type="text" id="keyword" name="keyword" class="form-control" value="@Model.AdGroups.Keyword" placeholder="Enter keyword...">
+        </div>
+        <div class="form-group">
+            <label for="sort">Sort By:</label>
+            <select id="sort" name="sort" class="form-control">
+                <option value="">-- Select --</option>
+                <option value="Name" @(Model.AdGroups.Sort == "Name" ? "selected" : "")>Name</option>
+                <option value="Bid" @(Model.AdGroups.Sort == "Bid" ? "selected" : "")>Bid</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <!-- Ad Groups Table -->
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Bid</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var adGroup in Model.AdGroups.Items)
+            {
+                <tr>
+                    <td><a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@Model.AdCampaign.RowKey/adgroup/@adGroup.RowKey">@adGroup.Name</a></td>
+                    <td>@adGroup.Status</td>
+                    <td>@adGroup.Bid</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination for Ad Groups -->
+    <div class="pagination">
+        <p>Page @Model.AdGroups.CurrentPage of @Model.AdGroups.TotalPages</p>
+        @if (Model.AdGroups.CurrentPage > 1)
+        {
+            <a class="btn btn-secondary" href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@Model.AdCampaign.RowKey?currentPage=@(Model.AdGroups.CurrentPage - 1)&itemsPerPage=@Model.AdGroups.ItemsPerPage">Previous</a>
+        }
+        @if (Model.AdGroups.CurrentPage < Model.AdGroups.TotalPages)
+        {
+            <a class="btn btn-secondary" href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@Model.AdCampaign.RowKey?currentPage=@(Model.AdGroups.CurrentPage + 1)&itemsPerPage=@Model.AdGroups.ItemsPerPage">Next</a>
+        }
+    </div>
+</div>

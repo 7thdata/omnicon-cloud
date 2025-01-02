@@ -11,6 +11,14 @@ namespace clsCms.Interfaces
     public interface IAuthorServices
     {
         /// <summary>
+        /// Get author within the channel by perma name.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="permaName"></param>
+        /// <returns></returns>
+        Task<AuthorModel?> GetAuthorByPermaNameAsync(string channelId, string permaName);
+
+        /// <summary>
         /// Creates a new author entry in the table storage.
         /// </summary>
         /// <param name="author">The author model to create.</param>

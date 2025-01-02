@@ -32,6 +32,9 @@
                     <span>Private</span>
                 }
             </p>
+            <p>
+                <a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id" target="_blank">Ads</a>
+            </p>
             <!-- Edit and Delete Buttons for the Channel -->
             <div class="d-flex justify-content-end">
                 <div class="mx-1">
@@ -63,7 +66,7 @@
                                 <div class="d-flex">
                                     <img src="@author.ProfileImageUrl"
                                          class="rounded-circle me-2"
-                                         style="width: 50px; height: 50px;"
+                                         style="width: 50px; height: 50px; object-fit: cover;"
                                          alt="@author.Title" />
                                     <div>
                                         @author.Title
@@ -162,48 +165,34 @@
         <div>
             <h2>Articles in Channel</h2>
         </div>
-        <div>
+        <div class="d-flex">
+            <!-- Search Bar -->
+            <form id="searchForm" class="d-flex me-3">
+                <div class="input-group">
+                    <input type="text" id="searchKeyword" class="form-control" placeholder="Search articles..." />
+                    <button type="button" id="searchButton" class="btn btn-secondary">Search</button>
+                </div>
+            </form>
+
+            <!-- Sort Dropdown -->
+            <div class="me-3">
+                <select id="sortSelector" class="form-select">
+                    <option value="">Sort by</option>
+                    <option value="title_asc">Title (A-Z)</option>
+                    <option value="title_desc">Title (Z-A)</option>
+                    <option value="publishdate_asc">Publish Date (Oldest First)</option>
+                    <option value="publishdate_desc">Publish Date (Newest First)</option>
+                </select>
+            </div>
+
             <!-- Button to Create New Article -->
             <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/create" class="btn btn-primary">
-                Create
-                New Article
+                Create New Article
             </a>
         </div>
     </div>
 
-    <table class="table mt-3">
-        <thead>
-            <tr>
-                <th>Pass</th>
-                <th>Perma Name</th>
-                <th>Article Title</th>
-                <th>Publish Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model.Articles.TotalItems > 0)
-            {
-                @foreach (var article in Model.Articles.Items)
-                {
-                    <tr>
-                        <td>
-                            @article.Folders
-                        </td>
-                        <td><a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/details/@article.RowKey">@article.PermaName</a></td>
-                        <td>@article.Title</td>
-                        <td>@article.PublishSince.ToString("yyyy-MM-dd")</td>
-
-                    </tr>
-                }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="4" class="text-center">No articles found.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div id="articles"></div>
 </div>
 
 <!-- Modal for Editing Channel -->
@@ -254,3 +243,57 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const $articlesContainer = $("#articles");
+            const $searchKeyword = $("#searchKeyword");
+            const $searchButton = $("#searchButton");
+            const $sortSelector = $("#sortSelector");
+
+            // Function to load articles with optional search and sort
+            function loadArticles(keyword = "", sort = "") {
+                // Show a loading message
+                $articlesContainer.html("<p>Loading articles...</p>");
+
+                // Prepare the URL with query parameters
+                const url = `/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/_articles?keyword=${encodeURIComponent(keyword)}&sort=${encodeURIComponent(sort)}`;
+
+                // Load the articles dynamically
+                $articlesContainer.load(url, function (response, status, xhr) {
+                    if (status === "error") {
+                        $articlesContainer.html(`<p class="text-danger">Failed to load articles: ${xhr.statusText}</p>`);
+                    }
+                });
+            }
+
+            // Initial load without filters
+            loadArticles();
+
+            // Handle search button click
+            $searchButton.on("click", function () {
+                const keyword = $searchKeyword.val().trim();
+                const sort = $sortSelector.val(); // Get the selected sort value
+                loadArticles(keyword, sort);
+            });
+
+            // Handle sort change
+            $sortSelector.on("change", function () {
+                const sort = $(this).val();
+                const keyword = $searchKeyword.val().trim(); // Get the current search keyword
+                loadArticles(keyword, sort);
+            });
+
+            // Optional: Handle Enter key in the search input
+            $searchKeyword.on("keypress", function (e) {
+                if (e.which === 13) {
+                    e.preventDefault(); // Prevent form submission
+                    const keyword = $searchKeyword.val().trim();
+                    const sort = $sortSelector.val(); // Get the selected sort value
+                    loadArticles(keyword, sort);
+                }
+            });
+        });
+    </script>
+}

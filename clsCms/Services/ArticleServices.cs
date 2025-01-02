@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using Azure.Core;
 using clsCms.Interfaces;
 using Microsoft.Extensions.Primitives;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace clsCms.Services
 {
@@ -21,6 +22,7 @@ namespace clsCms.Services
     {
         private readonly TableClient _folderTable;
         private readonly TableClient _articleTable;
+        private readonly TableClient _searchHistoryTable;
         private readonly AppConfigModel _appConfig;
         private readonly ApplicationDbContext _db;
         private readonly IChannelServices _channelServices;
@@ -30,9 +32,10 @@ namespace clsCms.Services
         // Hardcoded table names
         private const string FolderTableName = "FoldersTable";
         private const string ArticleTableName = "ArticlesTable";
+        private const string SearchHistoryTableName = "SearchHistoriesTable";
 
         // Simplified constructor with AppConfigModel using IOptions
-        public ArticleServices(IOptions<AppConfigModel> appConfig, 
+        public ArticleServices(IOptions<AppConfigModel> appConfig,
             IChannelServices channelServices, ApplicationDbContext db,
             IAuthorServices authorServices)
         {
@@ -50,9 +53,12 @@ namespace clsCms.Services
 
             _folderTable = serviceClient.GetTableClient(FolderTableName);
             _articleTable = serviceClient.GetTableClient(ArticleTableName);
+            _searchHistoryTable = serviceClient.GetTableClient(SearchHistoryTableName);
 
             _folderTable.CreateIfNotExists();
             _articleTable.CreateIfNotExists();
+            _searchHistoryTable.CreateIfNotExists();
+
             _db = db;
             _authorServices = authorServices;
         }
@@ -102,12 +108,26 @@ namespace clsCms.Services
             return articles;
         }
 
+
+        /// <summary>
+        /// Search for article.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="searchQuery"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
+        /// <param name="sort"></param>
+        /// <param name="authorPermaName"></param>
+        /// <param name="isPublishDateSensitive"></param>
+        /// <returns></returns>
         public async Task<PaginationModel<ArticleModel>> SearchArticlesAsync(
      string channelId,
      string searchQuery,
-     int currentPage,
-     int itemsPerPage,
-     string sort = null)
+     int currentPage = 1,
+     int itemsPerPage = 10,
+     string sort = "publishdate_desc",
+     string authorPermaName = null,
+     bool isPublishDateSensitive = true)
         {
             var articles = new List<ArticleModel>();
             string[]? searchTerms = null;
@@ -116,11 +136,27 @@ namespace clsCms.Services
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 searchTerms = searchQuery.ToLower().Split(' ');
+
+                // And record this search term
+                await RecordSearchKeywordAsync(channelId, searchQuery);
+            }
+
+            // Build query.
+            AsyncPageable<ArticleModel> query;
+
+            if (isPublishDateSensitive)
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(a =>
+                   a.PartitionKey == channelId && a.IsArchived == false && a.PublishSince < DateTimeOffset.Now);
+            }
+            else
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(a =>
+                a.PartitionKey == channelId && a.IsArchived == false);
             }
 
             // Base query to fetch articles by ChannelId and IsArchived flag
-            await foreach (var article in _articleTable.QueryAsync<ArticleModel>(a =>
-                a.PartitionKey == channelId && a.IsArchived == false))
+            await foreach (var article in query)
             {
                 articles.Add(article);
             }
@@ -138,13 +174,32 @@ namespace clsCms.Services
                     .ToList()
                 : articles;
 
+            //
+            if (!string.IsNullOrEmpty(authorPermaName))
+            {
+                var author = await _authorServices.GetAuthorByPermaNameAsync(channelId, authorPermaName);
+
+                if (author != null)
+                {
+                    filteredArticles = filteredArticles.Where(a => a.AuthorId == author.RowKey).ToList();
+                }
+            }
+
             // Apply sorting if specified
             if (!string.IsNullOrEmpty(sort))
             {
-                filteredArticles = sort.ToLower() switch
+                var sortParams = sort.ToLower().Split('_'); // Example: "title_asc" or "publishdate_desc"
+                var sortField = sortParams[0]; // "title" or "publishdate"
+                var sortOrder = sortParams.Length > 1 ? sortParams[1] : "asc"; // "asc" or "desc"
+
+                filteredArticles = sortField switch
                 {
-                    "title" => filteredArticles.OrderBy(a => a.Title).ToList(),
-                    "publishdate" => filteredArticles.OrderByDescending(a => a.PublishSince).ToList(),
+                    "title" => sortOrder == "asc"
+                        ? filteredArticles.OrderBy(a => a.Title).ToList()
+                        : filteredArticles.OrderByDescending(a => a.Title).ToList(),
+                    "publishdate" => sortOrder == "asc"
+                        ? filteredArticles.OrderBy(a => a.PublishSince).ToList()
+                        : filteredArticles.OrderByDescending(a => a.PublishSince).ToList(),
                     _ => filteredArticles
                 };
             }
@@ -169,6 +224,76 @@ namespace clsCms.Services
                 Sort = sort
             };
         }
+
+        /// <summary>
+        /// Record search query.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        private async Task RecordSearchKeywordAsync(string channelId, string keyword)
+        {
+            // Use Keyword as RowKey and Channel Id as PartitionKey
+            string rowKey = keyword;
+            string partitionKey = channelId;
+
+            try
+            {
+                // Attempt to retrieve the existing record
+                var existingRecord = await _searchHistoryTable.GetEntityAsync<SearchQueryHistoryModel>(partitionKey, rowKey);
+
+                // If the record exists, update the counter and timestamp
+                existingRecord.Value.Counter++;
+                existingRecord.Value.Timestamp = DateTime.UtcNow;
+
+                await _searchHistoryTable.UpdateEntityAsync(existingRecord.Value, existingRecord.Value.ETag, TableUpdateMode.Replace);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                // If the record does not exist, add a new one
+                var newRecord = new SearchQueryHistoryModel
+                {
+                    PartitionKey = partitionKey,
+                    RowKey = rowKey,
+                    Counter = 1, // Initialize the counter for the new record
+                    Timestamp = DateTime.UtcNow
+                };
+
+                await _searchHistoryTable.AddEntityAsync(newRecord);
+            }
+        }
+
+        /// <summary>
+        /// Get list of search history.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        public async Task<List<SearchQueryHistoryModel>> GetSearchKeywordHistoryAsync(string channelId)
+        {
+            var results = new List<SearchQueryHistoryModel>();
+
+            try
+            {
+                // Define the query to filter by PartitionKey (channelId)
+                var filter = TableClient.CreateQueryFilter<SearchQueryHistoryModel>(
+                    e => e.PartitionKey == channelId
+                );
+
+                // Query the table storage for records matching the channelId
+                await foreach (var entity in _searchHistoryTable.QueryAsync<SearchQueryHistoryModel>(filter))
+                {
+                    results.Add(entity);
+                }
+            }
+            catch (RequestFailedException ex)
+            {
+                // Handle exceptions (e.g., log or rethrow)
+                Console.WriteLine($"Failed to retrieve search history: {ex.Message}");
+            }
+
+            return results;
+        }
+
 
         public async Task CreateArticleAsync(ArticleModel article)
         {
@@ -256,17 +381,30 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Get article view from permaName.
+        /// Get article view by perma name.
         /// </summary>
         /// <param name="channelId"></param>
         /// <param name="permaName"></param>
+        /// <param name="isPubslishDateSensitive"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId, string permaName)
+        public async Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId,
+            string permaName, bool isPubslishDateSensitive = true)
         {
             // Query the table for the specific article by PartitionKey (userId) and RowKey (articleId)
-            var query = _articleTable.QueryAsync<ArticleModel>(
-                a => a.PartitionKey == channelId && a.PermaName == permaName);
+            AsyncPageable<ArticleModel> query;
+
+            if (isPubslishDateSensitive)
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(
+                a => a.PartitionKey == channelId && a.PermaName == permaName && !a.IsArchived && a.PublishSince < DateTimeOffset.Now);
+            }
+            else
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(
+                a => a.PartitionKey == channelId && !a.IsArchived && a.PermaName == permaName);
+            }
+
 
             // Retrieve the first matching article
             ArticleModel article = null;
@@ -296,6 +434,20 @@ namespace clsCms.Services
             return result;
         }
 
+        /// <summary>
+        /// Record article impression.
+        /// </summary>
+        /// <param name="impression"></param>
+        /// <returns></returns>
+        public async Task<ArticleImpressionModel> LogArticleImpressionAsync(ArticleImpressionModel impression)
+        {
+            _db.ArticleImpressions.Add(impression);
+            await _db.SaveChangesAsync();
+
+            return impression;
+        }
+
+
         public async Task UpdateArticleAsync(ArticleModel article)
         {
             article.Timestamp = DateTime.UtcNow;
@@ -312,6 +464,8 @@ namespace clsCms.Services
         {
             return _articleTable.Query<ArticleModel>(a => a.ChannelId == channelId && !a.IsArchived && folders.Any(f => a.Folders.Contains(f))).ToList();
         }
+
+
 
         #endregion
 

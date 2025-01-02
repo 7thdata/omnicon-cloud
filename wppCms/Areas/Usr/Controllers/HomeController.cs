@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using clsCms.Interfaces;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace wppCms.Areas.Usr.Controllers
 {
@@ -16,13 +17,19 @@ namespace wppCms.Areas.Usr.Controllers
 
         private readonly IArticleServices _articleServices;
         private readonly IChannelServices _channelServices;
+        private readonly IAuthorServices _authorServices;
         private readonly UserManager<UserModel> _userManager;
+        private readonly AppConfigModel _appConfig;
 
-        public HomeController(IArticleServices articleServices, IChannelServices channelServices, UserManager<UserModel> userManager)
+        public HomeController(IArticleServices articleServices, 
+            IChannelServices channelServices, IAuthorServices authoerServices, UserManager<UserModel> userManager,
+            IOptions<AppConfigModel> appConfig)
         {
             _articleServices = articleServices;
             _channelServices = channelServices;
+            _authorServices = authoerServices;
             _userManager = userManager;
+            _appConfig = appConfig.Value;
         }
 
         [Route("/{culture}/usr")]
@@ -45,7 +52,8 @@ namespace wppCms.Areas.Usr.Controllers
             var view = new UsrHomeIndexViewModel()
             {
                 Channels = await _channelServices.GetChannelsByUserIdAndOrganizationIdAsync(user.OrganizationId, user.Id, keyword, sort, currentPage, itemsPerPage),
-                Culture = culture
+                Culture = culture,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);
@@ -134,7 +142,6 @@ namespace wppCms.Areas.Usr.Controllers
             return RedirectToAction("Index", new { culture = culture });
         }
 
-
         [Route("/{culture}/usr/channel/{channelId}")]
         public async Task<IActionResult> Details(string culture, string channelId, string keyword)
         {
@@ -147,15 +154,16 @@ namespace wppCms.Areas.Usr.Controllers
                 return NotFound();
             }
 
-            // Fetch the list of articles for the channel
-            var articles = await _articleServices.SearchArticlesAsync(channel.Channel.Id,keyword,1,10, "publishdate");
+            var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
+
+            channel.Authors = authors;
 
             // Build the view model
             var viewModel = new UsrHomeChannelDetailsViewModel
             {
                 Channel = channel,
-                Articles = articles,
-                Culture = culture
+                Culture = culture,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(viewModel); // Render the view with channel and articles

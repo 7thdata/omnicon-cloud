@@ -10,25 +10,38 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
 using clsCms.Interfaces;
+using clsCms.Models;
+using Microsoft.Extensions.Options;
 
 namespace clsCms.Services
 {
     public class BlobStorageServices : IBlobStorageServices
     {
         private readonly BlobServiceClient _blobServiceClient;
-        private readonly string _containerName;
+        private readonly IOptions<AppConfigModel> _appConfig;
 
-        public BlobStorageServices(IConfiguration configuration)
+        /// <summary>
+        /// Construct BlobStorageServices
+        /// </summary>
+        /// <param name="configuration"></param>
+        public BlobStorageServices(IOptions<AppConfigModel> appConfig)
         {
-            var connectionString = configuration["AppSettings:AzureStorage:BlobConnectionString"];
-            _containerName = configuration["AppSettings:AzureStorage:BlobContainerName"];
-            _blobServiceClient = new BlobServiceClient(connectionString);
+            _appConfig = appConfig;
+            _blobServiceClient = new BlobServiceClient(_appConfig.Value.AzureStorage.BlobConnectionString);
         }
 
-        /// <inheritdoc/>
-        public async Task<(string originalUrl, string thumbnailUrl)> UploadImageWithThumbnailAsync(Stream fileStream, string originalFileName, string contentType)
+
+        /// <summary>
+        /// Upload image with thumbnail.
+        /// </summary>
+        /// <param name="containerName"></param>
+        /// <param name="fileStream"></param>
+        /// <param name="originalFileName"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        public async Task<(string originalUrl, string thumbnailUrl)> UploadImageWithThumbnailAsync(string containerName, Stream fileStream, string originalFileName, string contentType)
         {
-            var blobContainerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+            var blobContainerClient = _blobServiceClient.GetBlobContainerClient(containerName);
             await blobContainerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
             // Generate a new GUID for the file name
@@ -117,6 +130,45 @@ namespace clsCms.Services
             thumbnailStream.Position = 0; // Reset stream position for upload
 
             return thumbnailStream;
+        }
+
+        /// <summary>
+        /// Lists files in the specified container with optional pagination.
+        /// </summary>
+        /// <param name="containerName">The name of the container.</param>
+        /// <param name="continuationToken">Token for fetching the next set of results.</param>
+        /// <param name="pageSize">Number of results to fetch per page (optional).</param>
+        /// <returns>A tuple containing the list of file names and the continuation token.</returns>
+        public async Task<(List<string> fileNames, string continuationToken)> ListFilesAsync(string containerName, string continuationToken = null, int pageSize = 10)
+        {
+            try
+            {
+                var blobContainerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                var fileNames = new List<string>();
+
+                // List blobs with pagination
+                var resultSegment = blobContainerClient.GetBlobsAsync().AsPages(continuationToken, pageSize);
+
+                await foreach (var blobPage in resultSegment)
+                {
+                    foreach (var blobItem in blobPage.Values)
+                    {
+                        fileNames.Add(blobItem.Name);
+                    }
+
+                    // Return the continuation token for the next page
+                    continuationToken = blobPage.ContinuationToken;
+
+                    // Stop after the first page if only one page is needed
+                    break;
+                }
+
+                return (fileNames, continuationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException($"Error listing files in Azure Blob Storage: {ex.Message}", ex);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using clsCms.Models;
 using wppCms.Areas.Usr.Models;
 using System.Globalization;
+using Microsoft.Extensions.Options;
 
 namespace wppCms.Areas.usr.Controllers
 {
@@ -14,11 +15,15 @@ namespace wppCms.Areas.usr.Controllers
     {
         private readonly UserManager<UserModel> _userManager;
         private readonly SignInManager<UserModel> _signInManager;
+        private readonly AppConfigModel _appConfig;
 
-        public UserManagerController(UserManager<UserModel> userManager, SignInManager<UserModel> signInManager)
+        public UserManagerController(UserManager<UserModel> userManager, 
+            SignInManager<UserModel> signInManager,
+            IOptions<AppConfigModel> appConfig)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _appConfig = appConfig.Value;
         }
 
         // Show User Information
@@ -34,7 +39,8 @@ namespace wppCms.Areas.usr.Controllers
             var view = new UsrUserManagementIndexViewModel()
             {
                 Culture = culture,
-                User = user
+                User = user,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             // Pass user information to the view
@@ -48,7 +54,8 @@ namespace wppCms.Areas.usr.Controllers
         {
             var view = new UsrUserManagementChangePasswordViewModel()
             {
-                Culture = culture
+                Culture = culture,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);
@@ -96,7 +103,8 @@ namespace wppCms.Areas.usr.Controllers
 
             var view = new UsrUserManagementChangeEmailViewModel()
             {
-                Culture = culture
+                Culture = culture,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);
