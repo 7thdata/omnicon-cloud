@@ -33,80 +33,19 @@
             {
                 <div class="col-md-3 col-6">
                     <div class="card">
-                        <img src="@item.ProfileImageUrl" class="card-img-top" />
+                        <div class="ratio ratio-1x1">
+                            <img src="@item.ProfileImageUrl"
+                                 class="card-img-top"
+                                 style="object-fit: cover;"
+                                 alt="@item.Title" />
+                        </div>
                         <div class="card-body">
                             <h4 class="font-lg">@item.Title</h4>
                             <div>@item.Text</div>
                             <!-- Edit button triggers modal for each author -->
-                            <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal"
-                                    data-bs-target="#editAuthorModal-@item.RowKey">
-                                Edit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modal for Editing Author -->
-                <div class="modal fade" id="editAuthorModal-@item.RowKey" tabindex="-1" aria-labelledby="editAuthorModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="editAuthorModalLabel">Edit Author</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <!-- Edit Author Form -->
-                                <form action="/@Model.Culture/usr/author/edit/@item.RowKey" method="post">
-                                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="channelId-@item.RowKey" class="form-label">Select Channel</label>
-                                        <select class="form-select" id="channelId-@item.RowKey" name="channelId" required>
-                                            <option value="" disabled>Select a channel</option>
-                                            @foreach (var channel in Model.Channels)
-                                            {
-                                                <option value="@channel.Channel.Id" @(channel.Channel.Id == item.ChannelId ? "selected" : "")>
-                                                    @channel.Channel.Title
-                                                </option>
-                                            }
-                                        </select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="authorTitle-@item.RowKey" class="form-label">Author Name</label>
-                                        <input type="text" class="form-control" id="authorTitle-@item.RowKey" required name="title" value="@item.Title">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="authorPermaName-@item.RowKey" class="form-label">PermaName (Unique)</label>
-                                        <input type="text" class="form-control" id="authorPermaName-@item.RowKey" required name="permaName" value="@item.PermaName"
-                                               pattern="[a-z0-9\-]+"
-                                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="authorProfileImage-@item.RowKey" class="form-label">Profile Image URL</label>
-                                        <input type="text" class="form-control" id="authorProfileImage-@item.RowKey" name="profileImageUrl" value="@item.ProfileImageUrl">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="authorText-@item.RowKey" class="form-label">Introduction</label>
-                                        <textarea class="form-control" id="authorText-@item.RowKey" name="text" required>@item.Text</textarea>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="publishSince-@item.RowKey" class="form-label">Publish Since</label>
-                                        <input type="date" class="form-control" id="publishSince-@item.RowKey" required name="publishSince" value="@item.PublishSince.ToString("yyyy-MM-dd")">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="publishUntil-@item.RowKey" class="form-label">Publish Until (Optional)</label>
-                                        <input type="date" class="form-control" id="publishUntil-@item.RowKey" name="publishUntil" value="@item.PublishUntil?.ToString("yyyy-MM-dd")">
-                                    </div>
-
-                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                </form>
-                            </div>
+                            <a href="/@Model.Culture/usr/channel/@item.ChannelId/author/@item.RowKey" class="btn btn-secondary mt-2">
+                                Details
+                            </a>
                         </div>
                     </div>
                 </div>

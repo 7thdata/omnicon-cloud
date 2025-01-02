@@ -1,4 +1,36 @@
-﻿
-@*
-    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrArticles_ArticlesViewModel
+
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>Pass</th>
+            <th>Perma Name</th>
+            <th>Article Title</th>
+            <th>Publish Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Articles.TotalItems > 0)
+        {
+            @foreach (var article in Model.Articles.Items)
+            {
+                <tr>
+                    <td>
+                        @article.Folders
+                    </td>
+                    <td><a href="/@Model.Culture/usr/channel/@Model.ChannelId/article/details/@article.RowKey">@article.PermaName</a></td>
+                    <td>@article.Title</td>
+                    <td>@article.PublishSince.ToString("yyyy-MM-dd")</td>
+
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="4" class="text-center">No articles found.</td>
+            </tr>
+        }
+    </tbody>
+</table>

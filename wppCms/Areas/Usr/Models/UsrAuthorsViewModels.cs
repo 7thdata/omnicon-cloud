@@ -8,4 +8,10 @@ namespace wppCms.Areas.Usr.Models
         public List<AuthorModel> Authors { get; set; }
         public IList<ChannelViewModel> Channels { get; set; }
     }
+
+    public class UsrAuthorsDetailsViewModel : PageViewModel
+    {
+        public AuthorModel Author { get; set; }
+        public ChannelViewModel Channel { get; set; }
+    }
 }

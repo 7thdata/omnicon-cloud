@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -197,6 +198,163 @@ namespace clsCms.Models
         public string? Country { get; set; }
         public string? City { get; set; }
         public string? Language { get; set; }
+    }
+
+    [Table("ArticleImpressionsHourly")]
+    [Index(nameof(Tick), nameof(OrganizationId), nameof(ChannelId), nameof(ArticleId), IsUnique = true)]
+    [Index(nameof(Tick))]
+    [Index(nameof(OrganizationId), nameof(Tick))]
+    public class ArticleImpressionHourlyModel
+    {
+        public DateTime Tick { get; set; } // UTC start of the hour.
+
+        [MaxLength(36)]
+        public string OrganizationId { get; set; }
+        [MaxLength(36)]
+        public string ArticleId { get; set; }
+        [MaxLength(36)]
+        public string ChannelId { get; set; }
+
+        public int TotalImpressions { get; set; }
+        public int UniqueUsers { get; set; }
+        public double AverageImpressionDuration { get; set; } // Optional
+        public string TopReferrer { get; set; } // Optional
+        public string TopCountry { get; set; } // Optional
+        public string TopCity { get; set; } // Optional
+    }
+
+    [Table("ArticleImpressionsDaily")]
+    [Index(nameof(Tick), nameof(OrganizationId), nameof(ChannelId), nameof(ArticleId), IsUnique = true)]
+    [Index(nameof(Tick))]
+    [Index(nameof(OrganizationId), nameof(Tick))]
+    public class ArticleImpressionDailyModel
+    {
+        public DateTime Tick { get; set; } // UTC start of the day.
+
+        [MaxLength(36)]
+        public string OrganizationId { get; set; }
+        [MaxLength(36)]
+        public string ArticleId { get; set; }
+        [MaxLength(36)]
+        public string ChannelId { get; set; }
+
+        public int TotalImpressions { get; set; } // Total impressions for the day.
+        public int UniqueUsers { get; set; } // Distinct UserId or DeviceId counts.
+        public double AverageImpressionDuration { get; set; } // Average duration in seconds (optional).
+        public string TopReferrer { get; set; } // Most common referrer (optional).
+        public string TopCountry { get; set; } // Top country based on impressions (optional).
+        public string TopCity { get; set; } // Top city based on impressions (optional).
+    }
+
+    [Table("ArticleImpressionsMonthly")]
+    [Index(nameof(Tick), nameof(OrganizationId), nameof(ChannelId), nameof(ArticleId), IsUnique = true)]
+    [Index(nameof(Tick))]
+    [Index(nameof(OrganizationId), nameof(Tick))]
+    public class ArticleImpressionMonthlyModel
+    {
+        public DateTime Tick { get; set; } // UTC start of the month.
+
+        [MaxLength(36)]
+        public string OrganizationId { get; set; }
+        [MaxLength(36)]
+        public string ArticleId { get; set; }
+        [MaxLength(36)]
+        public string ChannelId { get; set; }
+
+        public int TotalImpressions { get; set; } // Total impressions for the month.
+        public int UniqueUsers { get; set; } // Distinct UserId or DeviceId counts.
+        public double AverageImpressionDuration { get; set; } // Average duration in seconds (optional).
+        public string TopReferrer { get; set; } // Most common referrer (optional).
+        public string TopCountry { get; set; } // Top country based on impressions (optional).
+        public string TopCity { get; set; } // Top city based on impressions (optional).
+    }
+
+    [Table("PublisherAdImpressionModel")]
+    public class PublisherAdImpressionModel
+    {
+        [Key, MaxLength(64)]
+        public string AdImpressionId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+    }
+
+    [Table("PublisherAdImpressionMonthlyModel")]
+    public class PublisherAdImpressionMonthlyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdImpressionId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+    }
+
+    [Table("PublisherAdImpressionHourlyModel")]
+    public class PublisherAdImpressionHourlyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdImpressionId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+    }
+
+    [Table("PublisherAdImpressionDailyModel")]
+    public class PublisherAdImpressionDailyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdImpressionId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+    }
+
+    [Table("PublisherAdClickModel")]
+    public class PublisherAdClickModel
+    {
+        [Key, MaxLength(64)]
+        public string AdClickId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Clicks { get; set; }
+    }
+
+    [Table("PublisherAdClickMonthlyModel")]
+    public class PublisherAdClickMonthlyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdClickId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Clicks { get; set; }
+    }
+
+    [Table("PublisherAdClickHourlyModel")]
+    public class PublisherAdClickHourlyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdClickId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Clicks { get; set; }
+    }
+
+    [Table("PublisherAdClickDailyModel")]
+    public class PublisherAdClickDailyModel
+    {
+        [Key, MaxLength(64)]
+        public string AdClickId { get; set; }
+        [MaxLength(64)]
+        public string AdCreativeId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Clicks { get; set; }
     }
 
     /// <summary>

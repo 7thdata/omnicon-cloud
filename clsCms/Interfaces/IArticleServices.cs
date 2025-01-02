@@ -16,12 +16,40 @@ namespace clsCms.Services
         // Article CRUD
         Task<List<ArticleModel>> GetArticlesByChannelIdAsync(string userId, string channelId);
 
+        /// <summary>
+        /// Search for article.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="searchQuery"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
+        /// <param name="sort"></param>
+        /// <param name="authorPermaName"></param>
+        /// <param name="isPublishDateSensitive"></param>
+        /// <returns></returns>
         Task<PaginationModel<ArticleModel>> SearchArticlesAsync(
      string channelId,
      string searchQuery,
-     int currentPage,
-     int itemsPerPage,
-     string sort = null);
+     int currentPage = 1,
+     int itemsPerPage = 10,
+     string sort = "publishdate_desc",
+     string authorPermaName = null,
+     bool isPublishDateSensitive = true);
+
+        /// <summary>
+        /// Get list of search history.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        Task<List<SearchQueryHistoryModel>> GetSearchKeywordHistoryAsync(string channelId);
+
+        /// <summary>
+        /// Record article impression.
+        /// </summary>
+        /// <param name="impression"></param>
+        /// <returns></returns>
+        Task<ArticleImpressionModel> LogArticleImpressionAsync(ArticleImpressionModel impression);
+
         Task<ArticleModel?> GetArticleByChannelIdAndIdAsync(string channelId, string articleId);
 
         Task CreateArticleAsync(ArticleModel article);
@@ -37,13 +65,16 @@ namespace clsCms.Services
         Task<ArticleViewModel> GetArticleViewAsync(string channelId, string articleId);
 
         /// <summary>
-        /// Get article view from permaName.
+        /// Get article view by perma name.
         /// </summary>
         /// <param name="channelId"></param>
         /// <param name="permaName"></param>
+        /// <param name="isPubslishDateSensitive"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId, string permaName);
+        Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId,
+            string permaName, bool isPubslishDateSensitive = true);
+
         Task UpdateArticleAsync(ArticleModel article);
         Task DeleteArticleAsync(string channelId, string rowKey);
         Task<List<ArticleModel>> ListArticlesAsync(string channelId, List<string> folders);

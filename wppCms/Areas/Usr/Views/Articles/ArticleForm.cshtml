@@ -169,6 +169,10 @@
                         <!-- Dynamically added images and URLs will appear here -->
                     </div>
                 </div>
+                <div id="codeOutput" class="mt-3" style="display: none;">
+                    <h4>Generated Masonry Code</h4>
+                    <pre id="codeContainer" class="bg-light p-3"></pre>
+                </div>
             </div>
         </div>
 
@@ -257,7 +261,7 @@
                     alert(`Failed to upload ${file.name}: ${errorMessage}`);
                 }
             } catch (error) {
-                console.error('Error uploading image:', error);
+                console.error(`Error uploading ${file.name}:`, error);
                 alert(`An error occurred while uploading ${file.name}`);
             }
         }
@@ -306,7 +310,6 @@
 
         // Show a toast notification
         function showToast(message) {
-            // Create a toast container if it doesn't already exist
             let toastContainer = document.getElementById('toastContainer');
             if (!toastContainer) {
                 toastContainer = document.createElement('div');
@@ -319,7 +322,6 @@
                 document.body.appendChild(toastContainer);
             }
 
-            // Create a toast message
             const toast = document.createElement('div');
             toast.textContent = message;
             toast.style.background = '#333';
@@ -331,15 +333,59 @@
             toast.style.opacity = '1';
             toast.style.transition = 'opacity 0.5s ease';
 
-            // Append the toast message to the container
             toastContainer.appendChild(toast);
 
-            // Remove the toast after 3 seconds
             setTimeout(() => {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 500);
             }, 3000);
         }
-    });
 
+        // Generate Masonry Markup
+        const generateCodeButton = document.createElement('button');
+        generateCodeButton.textContent = 'Generate Masonry Code';
+        generateCodeButton.classList.add('btn', 'btn-primary', 'mt-3');
+        generateCodeButton.type = 'button';
+        generateCodeButton.addEventListener('click', () => {
+            const imageUrls = Array.from(imageList.querySelectorAll('a')).map(a => a.href); // Get all image URLs
+
+            if (imageUrls.length === 0) {
+                alert('No images to generate markup.');
+                return;
+            }
+
+            const masonryMarkup = generateMasonryMarkup(imageUrls);
+
+            const codeContainer = document.getElementById('codeContainer');
+            const codeOutput = document.getElementById('codeOutput'); // Get the container for displaying code
+
+            if (codeContainer) {
+                codeContainer.textContent = masonryMarkup; // Add the generated markup to the container
+            }
+
+            if (codeOutput) {
+                codeOutput.style.display = 'block'; // Make the code output section visible
+            }
+
+            // Append Masonry markup to the DOM if needed
+            const masonryContainer = document.querySelector('#masonryContainer');
+            if (masonryContainer) {
+                masonryContainer.innerHTML = masonryMarkup;
+                initializeMasonry('#masonryContainer'); // Initialize Masonry after images are loaded
+            }
+        });
+
+        previewContainer.appendChild(generateCodeButton);
+
+        function generateMasonryMarkup(imageUrls) {
+            let masonryMarkup = `<div id="masonryContainer" class="row">\n`;
+            imageUrls.forEach(url => {
+                masonryMarkup += `  <div class="col-md-4 mb-4">\n`;
+                masonryMarkup += `    <img src="${url}" class="img-fluid" alt="Uploaded Image">\n`;
+                masonryMarkup += `  </div>\n`;
+            });
+            masonryMarkup += `</div>`;
+            return masonryMarkup;
+        }
+    });
 </script>

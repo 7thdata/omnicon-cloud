@@ -8,6 +8,20 @@
 
 <html>
 <head>
+    <!-- Google Tag Manager -->
+    @if (!string.IsNullOrEmpty(Model.GaTagId))
+    {
+        <script>
+            (function (w, d, s, l, i) {
+                w[l] = w[l] || []; w[l].push({
+                    'gtm.start':
+                        new Date().getTime(), event: 'gtm.js'
+                }); var f = d.getElementsByTagName(s)[0],
+                    j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayer', '@Model.GaTagId');</script>
+        <!-- End Google Tag Manager -->
+    }
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@Model.Channel.Channel.Title</title>
@@ -15,9 +29,19 @@
     <script src="https://kit.fontawesome.com/29daede93b.js" crossorigin="anonymous"></script>
     <link href="~/css/articles.css" rel="stylesheet" />
     @Html.Raw(Model.Channel.Channel.PublicCss)
-    
+    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/imagesloaded/4.1.4/imagesloaded.pkgd.min.js"></script>
+
 </head>
 <body>
+    <!-- Google Tag Manager (noscript) -->
+    @if (!string.IsNullOrEmpty(Model.GaTagId))
+    {
+        <noscript>
+            <iframe src="https://www.googletagmanager.com/ns.html?id=@Model.GaTagId"
+                    height="0" width="0" style="display:none;visibility:hidden"></iframe>
+        </noscript>
+    }
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
             crossorigin="anonymous"></script>
@@ -37,9 +61,51 @@
 
                     <div class="py-3">
 
-                        <form action="/@Model.Culture/c/@Model.Channel.Channel.PermaName">
+                        <form action="/@Model.Culture/c/@Model.Channel.Channel.PermaName" method="get">
                             <div class="input-group mb-3">
+                                <!-- Keyword Input -->
                                 <input type="text" name="keyword" placeholder="Type in keyword here" value="@Model.Articles.Keyword" class="form-control" />
+
+                                @{
+                                    // Define sorting options for the dropdown
+                                    var sortOptions = new List<SelectListItem>
+                                {
+                                new SelectListItem { Value = "", Text = "Sort by" },
+                                new SelectListItem { Value = "title_asc", Text = "Title (A-Z)" },
+                                new SelectListItem { Value = "title_desc", Text = "Title (Z-A)" },
+                                new SelectListItem { Value = "publishdate_asc", Text = "Publish Date (Oldest First)" },
+                                new SelectListItem { Value = "publishdate_desc", Text = "Publish Date (Newest First)" }
+                                };
+
+                                    // Mark the currently selected option
+                                    var currentSort = Model.Articles.Sort?.ToLower();
+                                    foreach (var option in sortOptions)
+                                    {
+                                        if (option.Value == currentSort)
+                                        {
+                                            option.Selected = true;
+                                        }
+                                    }
+                                }
+
+                                <!-- Render the dropdown -->
+                                <select name="sort" class="form-select">
+                                    @foreach (var option in sortOptions)
+                                    {
+                                        if (option.Selected)
+                                        {
+                                            <option value="@option.Value" selected>@option.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@option.Value">@option.Text</option>
+                                        }
+
+                                    }
+                                </select>
+
+
+                                <!-- Submit Button -->
                                 <button class="btn btn-primary" type="submit">
                                     <i class="fa-solid fa-magnifying-glass"></i>
                                 </button>
@@ -47,7 +113,7 @@
                         </form>
                     </div>
 
-                    <div class="row">
+                    <div class="row" data-masonry='{"percentPosition": true }'>
                         <!--Show list of articles here-->
                         @foreach (var article in Model.Articles.Items)
                         {
@@ -58,7 +124,10 @@
                                         <img src="@article.MainImageUrl" class="card-img-top" />
                                     }
                                     <div class="card-body">
-                                        <h5><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName/d/@article.PermaName">@article.Title</a></h5>
+                                        <p>
+                                            @article.PublishSince.ToString("yyyy-MM-dd")
+                                        </p>
+                                        <h5><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName/d/@article.PermaName" class="text-decoration-none text-secondary stretched-link">@article.Title</a></h5>
                                         <p>@article.Description</p>
                                     </div>
                                 </div>
@@ -75,6 +144,32 @@
                     <!--Show Authors-->
                     <div class="card card-body my-2">
                         <h3>Authors</h3>
+
+                        @if (Model.Channel.Authors != null)
+                        {
+                            <div class="row">
+
+                                @foreach (var author in Model.Channel.Authors)
+                                {
+                                    <div class="col-md-6 my-2">
+                                        <div class="card">
+                                            <div class="profile-image-container">
+                                                @if (!string.IsNullOrEmpty(author.ProfileImageUrl))
+                                                {
+                                                    <img src="@author.ProfileImageUrl" class="card-img-top" alt="@author.Title" />
+                                                }
+                                            </div>
+                                            <div class="card-body">
+                                                <h3 class="font-lg">
+                                                    @author.Title
+                                                </h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                            </div>
+                        }
                     </div>
 
                     <!--Show tags-->
@@ -85,6 +180,25 @@
                     <!--Show popular search-->
                     <div class="card card-body my-2">
                         <h3>Popular Search Terms</h3>
+                        @if (Model.Channel.SearchQueryHistory.Count > 0)
+                        {
+                            <div>
+                                @foreach (var search in Model.Channel.SearchQueryHistory.OrderByDescending(s => s.Counter).Take(10))
+                                {
+                                    <div class="d-flex justify-content-between align-items-center py-2">
+                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@search.RowKey" class="flex-grow-1 text-decoration-none text-dark">
+                                            @search.RowKey
+                                        </a>
+                                        <span class="badge bg-primary">@search.Counter</span>
+
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center">No search history.</div>
+                        }
                     </div>
 
                 </div>

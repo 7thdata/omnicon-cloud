@@ -3,6 +3,9 @@
 @model HomeIndexViewModel
 @{
     var title = Localizer["Title"];
+    ViewData["Title"] = title;
+    ViewData["GaTagId"] = Model.GaTagId;
+    ViewData["Culture"] = Model.Culture;
 }
 
 @section Header {

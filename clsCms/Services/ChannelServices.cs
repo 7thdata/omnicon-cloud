@@ -82,6 +82,9 @@ namespace clsCms.Services
             // Now call GetChannelMemberships in-memory after fetching the channel
             var members = GetChannelMemberships(channelId, false);
 
+            // Get search history
+
+
             // Create the ChannelViewModel and assign the members
             var channelViewModel = new ChannelViewModel(channel)
             {

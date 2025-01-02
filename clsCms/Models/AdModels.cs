@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using Azure.Storage.Blobs.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -65,10 +66,20 @@ namespace clsCms.Models
         // This is stored in azure table.
         public string PartitionKey { get; set; } // Organization Id
         public string RowKey { get; set; } // Ad Id
+        public string Name { get; set; }
+        public string Type { get; set; }    
+        public string Content { get; set; }
+        public string TextTitle { get; set; }   
+        public string TextAdDescription { get; set; } 
+        public string ImageAdUrl { get; set; }
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; } // Automatically managed by Azure Table Storage
     }
 
+    /// <summary>
+    /// Raw impression data.
+    /// Keep it up to 7 days.
+    /// </summary>
     [Table("AdImpressions")]
     public class AdImpressionModel
     {
@@ -76,6 +87,9 @@ namespace clsCms.Models
         // This is stoerd in SQL database
         [Key,MaxLength(36)]
         public string ImpressionId { get; set; }
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+      
         public DateTimeOffset Timestamp { get; set; }
         public string? UserAgent { get; set; }
         public string? IpAddress { get; set; }
@@ -96,6 +110,10 @@ namespace clsCms.Models
         public int CPM { get; set; }
     }
 
+    /// <summary>
+    /// Raw click data.
+    /// Keep it up to 7 days.
+    /// </summary>
     [Table("AdClicks")]
     public class AdClickModel
     {
@@ -125,5 +143,135 @@ namespace clsCms.Models
         public int Clicks { get; set; } // Times clicked
         public int Amount { get; set; } // Cost for the click
 
+    }
+
+    /// <summary>
+    /// Store hourly record.
+    /// Keep it up to 336 hours
+    /// </summary>
+    [Table("AdCampaignPerformanceHourly")]
+    public class AdCampaignPerformanceRecordHourlyModel
+    {
+        [Key,MaxLength(64)]
+        public string Id { get; set; } // yyyy-MM-dd-campaignId
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }  
+        public DateTime Tick {get;set;} //
+        public int Impressions { get; set; }    
+        public int CPM { get;set; }
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string ChannelId { get; set; }
+        [MaxLength(64)]
+        public string AdCampaignId { get; set; }
+        [MaxLength(64)]
+        public string AdGroupId { get; set; }
+    }
+
+    /// <summary>
+    /// Store hourly record  
+    /// Keep it up to 336 hours
+    /// </summary>
+    [Table("AdCreativePerformanceHourly")]
+    public class AdCreativePerformanceRecordHourlyModel
+    {
+        [Key, MaxLength(64)]
+        public string Id { get; set; }
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+        public int CPM { get; set; }    
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string AdGreativeId { get; set; }
+    }
+
+    /// <summary>
+    /// Store hourly record.
+    /// Keep it up to 1 year
+    /// </summary>
+    [Table("AdCampaignPerformanceDaily")]
+    public class AdCampaignPerformanceRecordDailyModel
+    {
+        [Key, MaxLength(64)]
+        public string Id { get; set; } // yyyy-MM-dd-campaignId
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+        public DateTime Tick { get; set; } //
+        public int Impressions { get; set; }
+        public int CPM { get; set; }    
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string ChannelId { get; set; }
+        [MaxLength(64)]
+        public string AdCampaignId { get; set; }
+        [MaxLength(64)]
+        public string AdGroupId { get; set; }
+    }
+
+    /// <summary>
+    /// Store hourly
+    /// Keep it up to 1 year
+    /// </summary>
+    [Table("AdCreativePerformanceDaily")]
+    public class AdCreativePerformanceRecordDailyModel
+    {
+        [Key, MaxLength(64)]
+        public string Id { get; set; }
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+        public int CPM { get;set; }
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string AdGreativeId { get; set; }
+    }
+
+    /// <summary>
+    /// Store monthly campaign performance
+    /// </summary>
+    [Table("AdCampaignPerformanceMonthly")]
+    public class AdCampaignPerformanceRecordMonthlyModel
+    {
+        [Key, MaxLength(64)]
+        public string Id { get; set; } // yyyy-MM-dd-campaignId
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+        public DateTime Tick { get; set; } //
+        public int Impressions { get; set; }
+        public int CPM { get; set; }    
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string ChannelId { get; set; }
+        [MaxLength(64)]
+        public string AdCampaignId { get; set; }
+        [MaxLength(64)]
+        public string AdGroupId { get; set; }
+    }
+
+    /// <summary>
+    /// Store monthly ad performance.
+    /// </summary>
+    [Table("AdCreativePerformanceMonthly")]
+    public class AdCreativePerformanceRecordMonthlyModel
+    {
+        [Key, MaxLength(64)]
+        public string Id { get; set; }
+        [MaxLength(64)]
+        public string OrganizationId { get; set; }
+        public DateTime Tick { get; set; }
+        public int Impressions { get; set; }
+        public int CPM { get; set; }
+        public int Clicks { get; set; }
+        public int CPC { get; set; }
+        [MaxLength(64)]
+        public string AdGreativeId { get; set; }
     }
 }

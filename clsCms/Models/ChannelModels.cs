@@ -51,6 +51,7 @@ namespace clsCms.Models
         public string? PublicCss { get; set; }
         [MaxLength(36)]
         public string OrganizationId { get; set; }
+
     }
 
     [Table("ChannelMemberships")]
@@ -84,6 +85,17 @@ namespace clsCms.Models
         public DateTimeOffset? Archived { get; set; } // Date when the membership was archived
     }
 
+    // Record search history
+    public class SearchQueryHistoryModel : ITableEntity
+    {
+        public string RowKey { get; set; } // Use the Keyword as RowKey for efficiency
+        public DateTimeOffset? Timestamp { get; set; } // Automatically managed by Azure Table Storage
+        public ETag ETag { get; set; } // Automatically managed by Azure Table Storage
+        public string PartitionKey { get; set; } // Channel Id, must.
+
+        public int Counter { get; set; }
+    }
+
     public class ChannelViewModel
     {
         public ChannelViewModel(ChannelModel channel)
@@ -94,6 +106,7 @@ namespace clsCms.Models
         public ChannelModel Channel { get; set; } // The channel details
         public List<ChannelMembershipViewModel>? Members { get; set; }
         public List<AuthorModel>? Authors { get; set; }
+        public List<SearchQueryHistoryModel> SearchQueryHistory { get; set; }    
     }
 
     public class ChannelMembershipViewModel

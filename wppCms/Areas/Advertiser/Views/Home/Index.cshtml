@@ -1,0 +1,132 @@
+﻿@using wppCms.Areas.Advertiser.Models
+@model AdvertiserHomeIndexViewModel
+
+@{
+    ViewData["Title"] = "Advertiser Dashboard";
+    Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+}
+
+<div class="container my-5">
+    <h1>Campaigns</h1>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <!-- Search Form -->
+    <form method="get">
+        <div class="form-group">
+            <label for="keyword">Search Campaigns:</label>
+            <input type="text" id="keyword" name="keyword" class="form-control" value="@Model.Ads.Keyword" placeholder="Enter keyword...">
+        </div>
+        <div class="form-group">
+            <label for="sort">Sort By:</label>
+            <select id="sort" name="sort" class="form-control">
+                <option value="">-- Select --</option>
+                <option value="Name" @(Model.Ads.Sort == "Name" ? "selected" : "")>Name</option>
+                <option value="StartDate" @(Model.Ads.Sort == "StartDate" ? "selected" : "")>Start Date</option>
+                <option value="EndDate" @(Model.Ads.Sort == "EndDate" ? "selected" : "")>End Date</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <!-- Button to trigger modal -->
+    <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#createAdCampaignModal">
+        Create New Campaign
+    </button>
+
+    <!-- Modal for creating a new campaign -->
+    <div class="modal fade" id="createAdCampaignModal" tabindex="-1" aria-labelledby="createAdCampaignLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAdCampaignLabel">Create New Campaign</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/create" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="form-group mb-3">
+                            <label for="name">Campaign Name:</label>
+                            <input type="text" id="name" name="Name" class="form-control" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="startDate">Start Date:</label>
+                            <input type="date" id="startDate" name="StartDate" class="form-control" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="endDate">End Date:</label>
+                            <input type="date" id="endDate" name="EndDate" class="form-control" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="budget">Budget:</label>
+                            <input type="number" id="budget" name="Budget" class="form-control" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="status">Status:</label>
+                            <select id="status" name="Status" class="form-control" required>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="type">Type:</label>
+                            <input type="text" id="type" name="Type" class="form-control" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="description">Description:</label>
+                            <textarea id="description" name="Description" class="form-control"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaigns Table -->
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Budget</th>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ad in Model.Ads.Items)
+            {
+                <tr>
+                    <td><a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@ad.RowKey">@ad.Name</a></td>
+                    <td>@ad.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@ad.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@ad.Budget</td>
+                    <td>@ad.Status</td>
+                    <td>@ad.Type</td>
+                    <td>@ad.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <p>Page @Model.Ads.CurrentPage of @Model.Ads.TotalPages</p>
+        @if (Model.Ads.CurrentPage > 1)
+        {
+            <a class="btn btn-secondary" asp-action="Index" asp-route-culture="@Model.Culture" asp-route-organizationId="@Model.Ads.Items[0]?.PartitionKey" asp-route-currentPage="@(Model.Ads.CurrentPage - 1)" asp-route-itemsPerPage="@Model.Ads.ItemsPerPage">Previous</a>
+        }
+        @if (Model.Ads.CurrentPage < Model.Ads.TotalPages)
+        {
+            <a class="btn btn-secondary" asp-action="Index" asp-route-culture="@Model.Culture" asp-route-organizationId="@Model.Ads.Items[0]?.PartitionKey" asp-route-currentPage="@(Model.Ads.CurrentPage + 1)" asp-route-itemsPerPage="@Model.Ads.ItemsPerPage">Next</a>
+        }
+    </div>
+</div>

@@ -53,6 +53,8 @@ builder.Services.AddControllersWithViews().AddViewLocalization().AddRazorRuntime
 builder.Services.AddScoped<IAuthorServices, AuthorServices>();
 builder.Services.AddScoped<IArticleServices, ArticleServices>();
 builder.Services.AddScoped<IChannelServices, ChannelServices>();
+builder.Services.AddScoped<ITickServices, TickServices>();
+builder.Services.AddScoped<IAdvertiserServices, AdvertiserServices>();
 
 builder.Services.AddScoped<IUserServices, UserServices>();
 builder.Services.AddScoped<IBlobStorageServices, BlobStorageServices>();

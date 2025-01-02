@@ -6,17 +6,15 @@ namespace wppCms.Models
     {
     }
 
-    public class ChannelsIndexViewModel
+    public class ChannelsIndexViewModel : PageViewModel
     {
         public ChannelViewModel Channel { get; set; }
         public PaginationModel<ArticleModel> Articles { get; set; }
-        public string Culture { get; set; }
     }
 
-    public class ChannelsDetailsViewModel
+    public class ChannelsDetailsViewModel : PageViewModel
     {
         public ChannelViewModel Channel { get; set; }
         public ArticleViewModel Article { get; set; }
-        public string Culture { get; set; }
     }
 }
