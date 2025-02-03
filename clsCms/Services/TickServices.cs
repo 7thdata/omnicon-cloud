@@ -31,10 +31,22 @@ namespace clsCms.Services
             var startOfHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
             var endOfHour = startOfHour.AddHours(1);
 
+            Console.WriteLine($"[LOG] Current Time: {now}");
+            Console.WriteLine($"[LOG] Aggregation Time Window: StartOfHour = {startOfHour}, EndOfHour = {endOfHour}");
+
             // Query raw impressions within the time window
             var rawImpressions = await _dbContext.ArticleImpressions
                 .Where(impression => impression.ImpressionTime >= startOfHour && impression.ImpressionTime < endOfHour)
                 .ToListAsync();
+
+            Console.WriteLine($"[LOG] Raw impressions retrieved: {rawImpressions.Count}");
+            foreach (var impression in rawImpressions)
+            {
+                Console.WriteLine($"[LOG] Impression: OrgId={impression.OrganizationId}, ArticleId={impression.ArticleId}, " +
+                                  $"ChannelId={impression.ChannelId}, UserId={impression.UserId}, " +
+                                  $"ImpressionTime={impression.ImpressionTime}, Referrer={impression.Referrer}, " +
+                                  $"Country={impression.Country}, City={impression.City}");
+            }
 
             // Group raw impressions by OrganizationId, ArticleId, ChannelId, and Tick
             var groupedImpressions = rawImpressions
@@ -72,24 +84,60 @@ namespace clsCms.Services
                 })
                 .ToList();
 
+            Console.WriteLine($"[LOG] Grouped impressions count: {groupedImpressions.Count}");
+            foreach (var grouped in groupedImpressions)
+            {
+                Console.WriteLine($"[LOG] Grouped Impression: OrgId={grouped.OrganizationId}, ArticleId={grouped.ArticleId}, " +
+                                  $"ChannelId={grouped.ChannelId}, Tick={grouped.Tick}, " +
+                                  $"TotalImpressions={grouped.TotalImpressions}, UniqueUsers={grouped.UniqueUsers}, " +
+                                  $"TopReferrer={grouped.TopReferrer}, TopCountry={grouped.TopCountry}, TopCity={grouped.TopCity}");
+            }
+
             // Insert aggregated data into the hourly impressions table
             if (groupedImpressions.Any())
             {
-                await _dbContext.ArticleImpressionHourlyPerformance.AddRangeAsync(groupedImpressions);
-                await _dbContext.SaveChangesAsync();
+                try
+                {
+                    await _dbContext.ArticleImpressionHourlyPerformance.AddRangeAsync(groupedImpressions);
+                    var savedCount = await _dbContext.SaveChangesAsync();
+                    Console.WriteLine($"[LOG] Inserted {savedCount} grouped impressions into the hourly performance table.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Failed to insert grouped impressions: {ex.Message}");
+                }
             }
-
-            Console.WriteLine($"Aggregated {groupedImpressions.Count} hourly impressions for the hour starting {startOfHour}.");
+            else
+            {
+                Console.WriteLine($"[LOG] No grouped impressions to insert for the hour starting {startOfHour}.");
+            }
 
             // Cleanup: Delete raw impressions older than 7 days
             var retentionThreshold = now.AddDays(-7);
             var oldImpressions = _dbContext.ArticleImpressions
                 .Where(impression => impression.ImpressionTime < retentionThreshold);
 
-            _dbContext.ArticleImpressions.RemoveRange(oldImpressions);
+            var oldImpressionsCount = await oldImpressions.CountAsync();
+            Console.WriteLine($"[LOG] Raw impressions older than retention threshold: {oldImpressionsCount}");
 
-            var deletedCount = await _dbContext.SaveChangesAsync();
-            Console.WriteLine($"Deleted {deletedCount} raw impressions older than {retentionThreshold}.");
+            if (oldImpressionsCount > 0)
+            {
+                _dbContext.ArticleImpressions.RemoveRange(oldImpressions);
+
+                try
+                {
+                    var deletedCount = await _dbContext.SaveChangesAsync();
+                    Console.WriteLine($"[LOG] Deleted {deletedCount} raw impressions older than {retentionThreshold}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Failed to delete old impressions: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[LOG] No old impressions to delete.");
+            }
         }
 
         /// <summary>

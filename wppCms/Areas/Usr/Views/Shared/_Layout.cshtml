@@ -1,4 +1,11 @@
 ﻿<!DOCTYPE html>
+@{
+    // Set default culture.
+    if (ViewData["Culture"] == null)
+    {
+        ViewData["Culture"] = "en";
+    }
+}
 <html lang="en">
 <head>
     <!-- Google Tag Manager -->
@@ -6,12 +13,12 @@
     {
         <script>
             (function (w, d, s, l, i) {
-                w[l] = w[l] || []; w[l].push({
-                    'gtm.start':
-                        new Date().getTime(), event: 'gtm.js'
-                }); var f = d.getElementsByTagName(s)[0],
-                    j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+            w[l] = w[l] || []; w[l].push({
+            'gtm.start':
+            new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+            'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
             })(window, document, 'script', 'dataLayer', '@ViewData["GaTagId"]');</script>
         <!-- End Google Tag Manager -->
     }
@@ -26,9 +33,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 
+    <!-- Font Awsome-->
+    @if (ViewData["FontAwsome"] != null)
+    {
+            <script src="@ViewData["FontAwsome"]" crossorigin="anonymous"></script>
+    }
 
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/images/favicon/android-chrome-256x256.png">
+    <link rel="shortcut icon" href="/images/favicon/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png">
+
+    <link rel="manifest" href="/images/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -50,55 +69,67 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    article
-                                </span>
-                                Articles
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/authors">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    person
-                                </span>
-                                Authors
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/storage">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    storage
-                                </span>
-                                Storage
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/settings">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    settings
-                                </span>
-                                Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/analytics">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    analytics
-                                </span>
-                                Analytics
-                            </a>
-                        </li>
-                    </ul>
+
+                    @if (ViewData["ChannelId"] != null)
+                    {
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/en/usr">
+                                    <i class="fa-solid fa-grid fa-fw"></i>
+                                    Channels
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/@ViewData["Culture"]/usr/channel/@ViewData["ChannelId"]">
+                                   <i class="fa-solid fa-house fa-fw"></i>
+                                    Top
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/@ViewData["Culture"]/usr/channel/@ViewData["ChannelId"]/authors">
+                                   <i class="fa-solid fa-comment fa-fw"></i>
+                                    Authors
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                    <a class="nav-link" href="/@ViewData["Culture"]/usr/channel/@ViewData["ChannelId"]/storage">
+                                  <i class="fa-solid fa-warehouse fa-fw"></i>
+                                    Storage
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/en/usr/settings">
+                                   <i class="fa-solid fa-gear fa-fw"></i>
+                                    Settings
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/en/usr/analytics">
+                                    <i class="fa-solid fa-chart-simple fa-fw"></i>
+                                    Analytics
+                                </a>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                    <a class="nav-link" href="/@ViewData["Culture"]/usr">
+                                         <i class="fa-solid fa-grid fa-fw"></i>
+                                    Channels
+                                </a>
+                            </li>
+
+                        </ul>
+                    }
+
+
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/usermanagement">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    person
-                                </span>
-                                User Management
+                            <a class="nav-link" href="/@ViewData["Culture"]/usr/usermanagement">
+                               <i class="fa-solid fa-user fa-fw"></i>
+                               
                             </a>
                         </li>
                     </ul>
@@ -111,7 +142,7 @@
     <main role="main" class="container mt-5">
         @RenderBody()
     </main>
-
+    
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
             <span>&copy; 2023 - @DateTime.Now.Year OminiCon by SEVENTH DATA Inc.</span>

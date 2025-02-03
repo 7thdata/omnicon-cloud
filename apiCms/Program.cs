@@ -65,6 +65,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Add services to the container.
 builder.Services.AddScoped<IArticleServices, ArticleServices>();
+builder.Services.AddScoped<ISearchServices,SearchServices>();
 builder.Services.AddScoped<IChannelServices, ChannelServices>();
 builder.Services.AddScoped<IAuthorServices, AuthorServices>();
 builder.Services.AddScoped<IUserServices, UserServices>();

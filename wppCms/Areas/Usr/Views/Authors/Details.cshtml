@@ -2,6 +2,10 @@
 @model UsrAuthorsDetailsViewModel
 
 @{
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
+
     ViewData["Title"] = Model.Author.PermaName + " | " + Model.Channel.Channel.PermaName;
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
@@ -29,14 +33,14 @@
 
                 <div class="mb-3">
                     <label for="authorTitle" class="form-label">Author Name</label>
-                    <input type="text" class="form-control" value="@Model.Author.Title" id="authorTitle" required name="Title" required>
+                    <input type="text" class="form-control" value="@Model.Author.Title" id="authorTitle" required name="Title">
                 </div>
 
                 <div class="mb-3">
                     <label for="authorPermaName" class="form-label">PermaName (Unique)</label>
                     <input type="text" class="form-control" id="authorPermaName"
                            value="@Model.Author.PermaName"
-                           required name="PermaName" required
+                           required name="PermaName"
                            pattern="[a-z0-9\-]+"
                            title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
                     <span asp-validation-for="PermaName" class="text-danger"></span>
@@ -54,7 +58,7 @@
 
                 <div class="mb-3">
                     <label for="publishSince" class="form-label">Publish Since</label>
-                    <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@Model.Author.PublishSince.ToString("yyyy-MM-dd")" required>
+                    <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@Model.Author.PublishSince.ToString("yyyy-MM-dd")">
                 </div>
 
                 <div class="mb-3">

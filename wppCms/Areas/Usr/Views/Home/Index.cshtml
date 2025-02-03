@@ -3,6 +3,9 @@
 
 @{
     ViewData["Title"] = "User Dashboard";
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
+
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 
@@ -21,13 +24,16 @@
                     <h2>Your Channels</h2>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-success d-flex align-items-center" data-bs-toggle="modal"
-                        data-bs-target="#addChannelModal">
-                        <span class="material-icons me-2">add</span> Create New Channel
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                            data-bs-target="#addChannelModal">
+                        <i class="fa-solid fa-plus fa-fw"></i>
                     </button>
                 </div>
             </div>
 
+            <div>
+                <input type="text" class="form-control" id="searchInput" onkeyup="searchTable()" placeholder="Search for channels...">
+            </div>
             <table class="table mt-3">
                 <thead>
                     <tr>
@@ -36,17 +42,18 @@
                         <th>Articles</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="channelTableBody">
                     @foreach (var channelViewModel in Model.Channels.Items)
                     {
                         <tr>
                             <td>@channelViewModel.Channel.Title</td> <!-- Access Title through Channel -->
                             <td>
-                                <a href="/@Model.Culture/usr/channel/@channelViewModel.Channel.Id"> <!-- Access RowKey through Channel -->
+                                <a href="/@Model.Culture/usr/channel/@channelViewModel.Channel.Id">
+                                    <!-- Access RowKey through Channel -->
                                     @channelViewModel.Channel.PermaName <!-- Access PermaName through Channel -->
                                 </a>
                             </td>
-                            <td>
+                            <td class="text-end">
                                 @channelViewModel.Channel.ArticleCount.ToString("N0")
                             </td>
                         </tr>
@@ -69,7 +76,7 @@
                 <!-- Add Channel Form -->
                 <form action="/@Model.Culture/usr/channel/add" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                  
+
                     <div class="mb-3">
                         <label for="channelName" class="form-label">Channel Name</label>
                         <input type="text" class="form-control" id="channelName" name="Title" required>
@@ -78,8 +85,8 @@
                     <div class="mb-3">
                         <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
                         <input type="text" class="form-control" id="channelPermaName" name="PermaName" required
-                            pattern="[a-z0-9\-]+"
-                            title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                               pattern="[a-z0-9\-]+"
+                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
                         <span asp-validation-for="PermaName" class="text-danger"></span>
                     </div>
 
@@ -88,11 +95,17 @@
                         <textarea class="form-control" id="channelDescription" name="Description"></textarea>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="defaultCulture" class="form-label">Default Culture</label>
+                        <input type="text" class="form-control" id="defaultCulture" name="DefaultCulture" required>
+                    </div>
+
                     <!-- New Checkbox for IsPublic -->
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="isPublic" name="IsPublic">
                         <label class="form-check-label" for="isPublic">Make Channel Public</label>
                     </div>
+
 
                     <button type="submit" class="btn btn-primary">Add Channel</button>
                 </form>
@@ -101,3 +114,33 @@
     </div>
 </div>
 
+
+@section Scripts {
+    <script>
+        function searchTable() {
+            var input, filter, table, tr, td, i, j, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toLowerCase();
+            table = document.getElementById("channelTableBody");
+            tr = table.getElementsByTagName("tr");
+
+            // Loop through all table rows
+            for (i = 0; i < tr.length; i++) {
+                tr[i].style.display = "none"; // Hide row by default
+                td = tr[i].getElementsByTagName("td");
+
+                // Check each cell in the row
+                for (j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                            tr[i].style.display = ""; // Show row if it matches the search query
+                            break; // If a match is found, no need to check other columns
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+}

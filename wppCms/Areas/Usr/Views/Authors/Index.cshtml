@@ -2,10 +2,19 @@
 @model UsrAuthorsIndexViewModel
 
 @{
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
     ViewData["Title"] = "Authors";
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 <div class="container my-5">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success mt-3" role="alert">
+            @TempData["Message"]
+        </div>
+    }
     <div class="d-flex justify-content-between">
         <div>
             <h1>@ViewData["Title"]</h1>
@@ -13,12 +22,12 @@
         <div>
             <!-- Button to trigger modal for adding a new author -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAuthorModal">
-                Add New Author
+                <i class="fa-solid fa-plus fa-fw"></i>
             </button>
         </div>
     </div>
- 
-    @if(TempData["Message"] != null)
+
+    @if (TempData["Message"] != null)
     {
         <div class="alert alert-success mt-3" role="alert">
             @TempData["Message"]
@@ -70,25 +79,16 @@
                 <!-- Add Author Form -->
                 <form action="/@Model.Culture/usr/author/create" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" name="channelId" value="@Model.Channel.Channel.Id" />
 
                     <div class="mb-3">
-                        <label for="channelId" class="form-label">Select Channel</label>
-                        <select class="form-select" id="channelId" name="ChannelId" required>
-                            <option value="" disabled selected>Select a channel</option>
-                            @foreach (var channel in Model.Channels)
-                            {
-                                <option value="@channel.Channel.Id">@channel.Channel.Title</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
                         <label for="authorTitle" class="form-label">Author Name</label>
-                        <input type="text" class="form-control" id="authorTitle" required name="Title" required>
+                        <input type="text" class="form-control" id="authorTitle" required name="Title">
                     </div>
 
                     <div class="mb-3">
                         <label for="authorPermaName" class="form-label">PermaName (Unique)</label>
-                        <input type="text" class="form-control" id="authorPermaName" required name="PermaName" required
+                        <input type="text" class="form-control" id="authorPermaName" required name="PermaName"
                                pattern="[a-z0-9\-]+"
                                title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
                         <span asp-validation-for="PermaName" class="text-danger"></span>
@@ -106,7 +106,7 @@
 
                     <div class="mb-3">
                         <label for="publishSince" class="form-label">Publish Since</label>
-                        <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@DateTimeOffset.UtcNow.ToString("yyyy-MM-dd")" required>
+                        <input type="date" class="form-control" id="publishSince" required name="PublishSince" value="@DateTimeOffset.UtcNow.ToString("yyyy-MM-dd")">
                     </div>
 
                     <div class="mb-3">
@@ -114,7 +114,11 @@
                         <input type="date" class="form-control" id="publishUntil" value="@DateTimeOffset.UtcNow.AddYears(30).ToString("yyyy-MM-dd")" required name="PublishUntil">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Add Author</button>
+                    <div class="my-2 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-cloud-arrow-up fa-fw"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

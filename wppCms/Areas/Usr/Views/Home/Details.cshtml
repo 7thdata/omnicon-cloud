@@ -1,52 +1,65 @@
 ﻿@using wppCms.Areas.Usr.Models
-@model UsrHomeChannelDetailsViewModel
+@model UsrHomeDetailsViewModel
 
 @{
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
+
     ViewData["Title"] = "Channel - " + Model.Channel.Channel.Title;
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container my-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/@Model.Culture/usr">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
-        </ol>
-    </nav>
-
-
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-5">
 
             <h1>@Model.Channel.Channel.Title</h1>
             <p>
                 @Model.Channel.Channel.Description
             </p>
-            <p>
-                @if (Model.Channel.Channel.IsPublic)
-                {
-                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" target="_blank">Public</a>
-                }
-                else
-                {
-                    <span>Private</span>
-                }
-            </p>
-            <p>
-                <a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id" target="_blank">Ads</a>
-            </p>
+            <div class="d-flex py-1">
+                <div class="me-1">
+                    @if (Model.Channel.Channel.IsPublic)
+                    {
+                        <a class="btn btn-secondary" href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" target="_blank">
+                            <i class="fa-solid fa-desktop fa-fw"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="btn btn-secondary">
+                            <i class="fa-solid fa-display-slash fa-fw"></i>
+                        </span>
+                    }
+                </div>
+                <div class="x-1">
+                    <a class="btn btn-secondary" href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id" target="_blank">
+                        <i class="fa-solid fa-rectangle-ad fa-fw"></i>
+                    </a>
+                </div>
+            </div>
+          
             <!-- Edit and Delete Buttons for the Channel -->
             <div class="d-flex justify-content-end">
                 <div class="mx-1">
-                    <button type="button" class="btn btn-success d-flex align-items-center" data-bs-toggle="modal"
-                            data-bs-target="#editChannelModal">
-                        Edit Channel
-                    </button>
+                    <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/edit" class="btn btn-primary">
+                        <i class="fa-solid fa-pen-to-square fa-fw"></i>
+                    </a>
                 </div>
                 <div class="mx-1">
                     <form action="/@Model.Culture/usr/channel/delete/@Model.Channel.Channel.Id" method="post"
                           onsubmit="return confirm('Warning: Deleting this channel will make it inaccessible to all members, including yourself. Articles belonging to this channel will also no longer be accessible. Additionally, this channel will no longer be available through the API. Are you sure you want to proceed?');">
-                        <button type="submit" class="btn btn-danger">Delete Channel</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa-solid fa-trash fa-fw"></i>
+                        </button>
                     </form>
                 </div>
             </div>
@@ -85,8 +98,8 @@
             {
                 <p>No authors found.</p>
             }
-        </div>
-        <div class="col-md-6">
+
+            <hr />
             <h2>Members</h2>
 
             <div class="row">
@@ -156,92 +169,43 @@
                 }
             </div>
         </div>
-    </div>
+        <div class="col-md-7">
+            <!-- List of Articles in this Channel -->
+            <div class="d-flex justify-content-between align-items-start pt-4">
 
-    <hr />
+                <div class="d-flex">
+                    <!-- Search Bar -->
+                    <form id="searchForm" class="d-flex me-3">
+                        <div class="input-group">
+                            <input type="text" id="searchKeyword" class="form-control" placeholder="Search articles..." />
+                            <button type="button" id="searchButton" class="btn btn-secondary">
+                                <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                            </button>
+                        </div>
+                    </form>
 
-    <!-- List of Articles in this Channel -->
-    <div class="d-flex justify-content-between align-items-start pt-4">
-        <div>
-            <h2>Articles in Channel</h2>
-        </div>
-        <div class="d-flex">
-            <!-- Search Bar -->
-            <form id="searchForm" class="d-flex me-3">
-                <div class="input-group">
-                    <input type="text" id="searchKeyword" class="form-control" placeholder="Search articles..." />
-                    <button type="button" id="searchButton" class="btn btn-secondary">Search</button>
+                    <!-- Sort Dropdown -->
+                    <div class="me-3">
+                        <select id="sortSelector" class="form-select">
+                            <option value="">Sort by</option>
+                            <option value="title_asc">Title (A-Z)</option>
+                            <option value="title_desc">Title (Z-A)</option>
+                            <option value="publishdate_asc">Publish Date (Oldest First)</option>
+                            <option value="publishdate_desc">Publish Date (Newest First)</option>
+                        </select>
+                    </div>
+
+                    <!-- Button to Create New Article -->
+                    <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/create" class="btn btn-primary">
+                        <i class="fa-solid fa-plus fa-fw"></i>
+                    </a>
                 </div>
-            </form>
-
-            <!-- Sort Dropdown -->
-            <div class="me-3">
-                <select id="sortSelector" class="form-select">
-                    <option value="">Sort by</option>
-                    <option value="title_asc">Title (A-Z)</option>
-                    <option value="title_desc">Title (Z-A)</option>
-                    <option value="publishdate_asc">Publish Date (Oldest First)</option>
-                    <option value="publishdate_desc">Publish Date (Newest First)</option>
-                </select>
             </div>
 
-            <!-- Button to Create New Article -->
-            <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/create" class="btn btn-primary">
-                Create New Article
-            </a>
+            <div id="articles"></div>
         </div>
     </div>
 
-    <div id="articles"></div>
-</div>
-
-<!-- Modal for Editing Channel -->
-<div class="modal fade" id="editChannelModal" tabindex="-1" aria-labelledby="editChannelModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editChannelModalLabel">Edit Channel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Edit Channel Form -->
-                <form action="/@Model.Culture/usr/channel/edit/@Model.Channel.Channel.Id" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                    <div class="mb-3">
-                        <label for="channelName" class="form-label">Channel Name</label>
-                        <input type="text" class="form-control" id="channelName" name="Title" value="@Model.Channel.Channel.Title" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
-                        <input type="text" class="form-control" id="channelPermaName" name="PermaName" value="@Model.Channel.Channel.PermaName" required
-                               pattern="[a-z0-9\-]+"
-                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
-                        <span asp-validation-for="PermaName" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="channelDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="channelDescription" name="Description">@Model.Channel.Channel.Description</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="PublicCss" class="form-label">CSS</label>
-                        <textarea class="form-control" id="PublicCss" rows="5" name="PublicCss">@Model.Channel.Channel.PublicCss</textarea>
-                    </div>
-
-                    <!-- Checkbox for IsPublic -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isPublicEdit" value="true" name="isPublic" @(Model.Channel.Channel.IsPublic ? "checked" : "")>
-                        <label class="form-check-label" for="isPublicEdit">Make Channel Public</label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Update Channel</button>
-                </form>
-            </div>
-        </div>
-    </div>
 </div>
 
 @section Scripts {

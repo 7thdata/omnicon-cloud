@@ -6,17 +6,23 @@ body {
 }
 /* Use Montserrat for the logo */
 .logo {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Montserrat", serif;
+    font-weight:600;
 }
 
 /* Logo-sub with existing Russo One font */
 .logo-sub {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Montserrat", serif;
+    font-weight: 600;
 }
 
 /* Larger font size */
 .font-lg {
     font-size: 1.5em;
+}
+
+.font-md{
+    font-size:1em;
 }
 
 /* Smaller font size */
@@ -30,7 +36,13 @@ main {
 }
 
 .material-symbols-outlined {
-    font-size: 20px; /* Adjust size */
+    font-size: 22px; /* Adjust size */
     vertical-align: middle; /* Align with text */
     margin-right: 3px; /* Add consistent spacing */
+    margin-left:3px;
+}
+
+
+.tox-edit-area {
+    padding: 20px !important;
 }

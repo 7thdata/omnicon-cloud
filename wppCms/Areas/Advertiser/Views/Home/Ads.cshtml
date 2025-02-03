@@ -3,12 +3,14 @@
 
 @{
     ViewData["Title"] = "Ad Creatives";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["GaTagId"] = Model.GaTagId;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
     ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container my-5">
-    <h1>Ad Creatives</h1>
 
     <!-- Display Success Message -->
     @if (TempData["SuccessMessage"] != null)
@@ -20,14 +22,22 @@
 
     <!-- Channel Information -->
     <div class="mb-4">
-        <h2>Ads</h2>
-     
+        <div class="d-flex justify-content-between">
+            <div>
+                <h2>Ads</h2>
+            </div>
+            <div>
+
+                <!-- Button to trigger modal for creating a new ad creative -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAdCreativeModal">
+                    <i class="fa-solid fa-plus fa-fw"></i>
+                </button>
+            </div>
+        </div>
+
+
     </div>
 
-    <!-- Button to trigger modal for creating a new ad creative -->
-    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createAdCreativeModal">
-        Create New Ad Creative
-    </button>
 
     <!-- Modal for creating a new ad creative -->
     <div class="modal fade" id="createAdCreativeModal" tabindex="-1" aria-labelledby="createAdCreativeLabel" aria-hidden="true">
@@ -40,30 +50,58 @@
                 <div class="modal-body">
                     <form id="createAdCreativeForm" method="post" action="/@Model.Culture/ad/organization/@Model.Channel.Channel.Id/creatives/create">
                         @Html.AntiForgeryToken()
+
+                        <!-- Ad Name -->
                         <div class="form-group mb-3">
                             <label for="name">Name:</label>
                             <input type="text" id="name" name="Name" class="form-control" required />
                         </div>
+
+                        <!-- Ad Type -->
                         <div class="form-group mb-3">
                             <label for="type">Type:</label>
-                            <input type="text" id="type" name="Type" class="form-control" required />
+                            <select id="type" name="Type" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <option value="text">Text</option>
+                                <option value="image">Image</option>
+                            </select>
                         </div>
+
+                        <!-- Text Ad Fields -->
+                        <div id="textAdFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="textTitle">Text Title:</label>
+                                <input type="text" id="textTitle" name="TextTitle" class="form-control" />
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="textAdDescription">Text Ad Description:</label>
+                                <textarea id="textAdDescription" name="TextAdDescription" class="form-control"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Image Ad Fields -->
+                        <div id="imageAdFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="imageAdUrl">Image Ad URL:</label>
+                                <input type="url" id="imageAdUrl" name="ImageAdUrl" class="form-control" />
+                            </div>
+                        </div>
+
+                        <!-- Image Tag Fields -->
+                        <div id="imageTagFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="imageTagUrl">Image Tag URL:</label>
+                                <input type="url" id="imageTagUrl" name="ImageTagUrl" class="form-control" />
+                            </div>
+                        </div>
+
+                        <!-- Redirect URL -->
                         <div class="form-group mb-3">
-                            <label for="content">Content:</label>
-                            <textarea id="content" name="Content" class="form-control" required></textarea>
+                            <label for="redirectUrl">Redirect URL:</label>
+                            <input type="url" id="redirectUrl" name="RedirectUrl" class="form-control" required />
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="textTitle">Text Title:</label>
-                            <input type="text" id="textTitle" name="TextTitle" class="form-control" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="textAdDescription">Text Ad Description:</label>
-                            <textarea id="textAdDescription" name="TextAdDescription" class="form-control"></textarea>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="imageAdUrl">Image Ad URL:</label>
-                            <input type="url" id="imageAdUrl" name="ImageAdUrl" class="form-control" />
-                        </div>
+
+                        <!-- Submit Button -->
                         <button type="submit" class="btn btn-primary">Create</button>
                     </form>
                 </div>
@@ -71,6 +109,75 @@
         </div>
     </div>
 
+    <!-- Modal for editing an ad creative -->
+    <div class="modal fade" id="editAdCreativeModal" tabindex="-1" aria-labelledby="editAdCreativeLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAdCreativeLabel">Edit Ad Creative</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createAdCreativeForm" method="post" action="/@Model.Culture/ad/organization/@Model.Channel.Channel.Id/creatives/create">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Ad Name -->
+                        <div class="form-group mb-3">
+                            <label for="name">Name:</label>
+                            <input type="text" id="name" name="Name" class="form-control" required />
+                        </div>
+
+                        <!-- Ad Type -->
+                        <div class="form-group mb-3">
+                            <label for="type">Type:</label>
+                            <select id="type" name="Type" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <option value="text">Text</option>
+                                <option value="image">Image</option>
+                            </select>
+                        </div>
+
+                        <!-- Text Ad Fields -->
+                        <div id="textAdFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="textTitle">Text Title:</label>
+                                <input type="text" id="textTitle" name="TextTitle" class="form-control" />
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="textAdDescription">Text Ad Description:</label>
+                                <textarea id="textAdDescription" name="TextAdDescription" class="form-control"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Image Ad Fields -->
+                        <div id="imageAdFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="imageAdUrl">Image Ad URL:</label>
+                                <input type="url" id="imageAdUrl" name="ImageAdUrl" class="form-control" />
+                            </div>
+                        </div>
+
+                        <!-- Image Tag Fields -->
+                        <div id="imageTagFields" class="d-none">
+                            <div class="form-group mb-3">
+                                <label for="imageTagUrl">Image Tag URL:</label>
+                                <input type="url" id="imageTagUrl" name="ImageTagUrl" class="form-control" />
+                            </div>
+                        </div>
+
+                        <!-- Redirect URL -->
+                        <div class="form-group mb-3">
+                            <label for="redirectUrl">Redirect URL:</label>
+                            <input type="url" id="redirectUrl" name="RedirectUrl" class="form-control" required />
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Table of Ad Creatives -->
     <table class="table table-striped">
         <thead>
@@ -81,33 +188,112 @@
                 <th>Text Title</th>
                 <th>Ad Description</th>
                 <th>Image URL</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var ad in Model.AdCreative.Items)
+            @foreach (var ad in Model.AdCreative)
             {
                 <tr>
-                    <td>@ad.Name</td>
+                    <td>
+                        <button class="btn btn-link btn-edit"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editAdCreativeModal"
+                                data-row-key="@ad.RowKey"
+                                data-name="@ad.Name"
+                                data-type="@ad.Type"
+                                data-text-title="@ad.TextTitle"
+                                data-text-description="@ad.TextAdDescription"
+                                data-image-url="@ad.ImageAdUrl"
+                                data-image-tag-url="@ad.ImageTagUrl"
+                                data-redirect-url="@ad.RedirectUrl"
+                                onclick="loadAdCreative(this)">
+                            @ad.Name
+                        </button>
+                    </td>
                     <td>@ad.Type</td>
                     <td>@ad.Content</td>
                     <td>@ad.TextTitle</td>
                     <td>@ad.TextAdDescription</td>
-                    <td><a href="@ad.ImageAdUrl" target="_blank">@ad.ImageAdUrl</a></td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(ad.ImageAdUrl))
+                        {
+                            <div class="my-1">
+                                <a href="@ad.ImageAdUrl" target="_blank">
+                                    <img src="@ad.ImageAdUrl" style="max-width:250px;" />
+                                </a>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(ad.ImageTagUrl))
+                        {
+                            <div class="my-1">
+                                Tag Url: @ad.ImageTagUrl
+                            </div>
+                        }
+                    </td>
+
                 </tr>
             }
         </tbody>
     </table>
 
-    <!-- Pagination -->
-    <div class="pagination">
-        <p>Page @Model.AdCreative.CurrentPage of @Model.AdCreative.TotalPages</p>
-        @if (Model.AdCreative.CurrentPage > 1)
-        {
-            <a class="btn btn-secondary" href="?currentPage=@(Model.AdCreative.CurrentPage - 1)&itemsPerPage=@Model.AdCreative.ItemsPerPage">Previous</a>
-        }
-        @if (Model.AdCreative.CurrentPage < Model.AdCreative.TotalPages)
-        {
-            <a class="btn btn-secondary" href="?currentPage=@(Model.AdCreative.CurrentPage + 1)&itemsPerPage=@Model.AdCreative.ItemsPerPage">Next</a>
-        }
-    </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Field toggle logic
+            function toggleFields(modalId, type) {
+                const $modal = $(modalId);
+                $modal.find('#textAdFields').toggleClass('d-none', type !== 'text');
+                $modal.find('#imageAdFields').toggleClass('d-none', type !== 'image');
+                $modal.find('#imageTagFields').toggleClass('d-none', type !== 'image');
+            }
+
+            // Handle type change for create modal
+            $('#createAdCreativeModal #type').on('change', function () {
+                toggleFields('#createAdCreativeModal', $(this).val());
+            });
+
+            // Handle type change for edit modal
+            $('#editAdCreativeModal #type').on('change', function () {
+                toggleFields('#editAdCreativeModal', $(this).val());
+            });
+
+            // Load ad creative data into edit modal
+            function loadAdCreative(button) {
+                const $button = $(button);
+
+                // Extract data from the button's data-* attributes
+                const name = $button.data('name');
+                const type = $button.data('type');
+                const textTitle = $button.data('text-title');
+                const textDescription = $button.data('text-description');
+                const imageUrl = $button.data('image-url');
+                const imageTagUrl = $button.data('image-tag-url'); // Add new data attribute
+                const redirectUrl = $button.data('redirect-url');
+                const rowKey = $button.data('row-key');
+
+                // Populate the form fields in the modal
+                const $modal = $('#editAdCreativeModal');
+                $modal.find('#name').val(name);
+                $modal.find('#type').val(type).trigger('change');
+                $modal.find('#textTitle').val(textTitle);
+                $modal.find('#textAdDescription').val(textDescription);
+                $modal.find('#imageAdUrl').val(imageUrl);
+                $modal.find('#imageTagUrl').val(imageTagUrl); // Populate new field
+                $modal.find('#redirectUrl').val(redirectUrl);
+
+                // Update form action if needed
+                if (rowKey) {
+                    $modal.find('form').attr('action', `/@Model.Culture/ad/organization/@Model.Channel.Channel.Id/creatives/${rowKey}/edit`);
+                }
+            }
+
+            // Attach event listener for edit buttons
+            $('body').on('click', '.btn-edit', function () {
+                loadAdCreative(this);
+            });
+        });
+    </script>
+}

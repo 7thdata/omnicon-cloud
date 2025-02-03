@@ -7,53 +7,45 @@ using clsCms.Interfaces;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
+using System.Threading.Channels;
 
 namespace wppCms.Areas.Usr.Controllers
 {
     [Area("Usr")]
     [Authorize]
-    public class HomeController : Controller
+    public class HomeController : UsrBaseController
     {
-
         private readonly IArticleServices _articleServices;
-        private readonly IChannelServices _channelServices;
         private readonly IAuthorServices _authorServices;
-        private readonly UserManager<UserModel> _userManager;
         private readonly AppConfigModel _appConfig;
 
-        public HomeController(IArticleServices articleServices, 
-            IChannelServices channelServices, IAuthorServices authoerServices, UserManager<UserModel> userManager,
-            IOptions<AppConfigModel> appConfig)
+        public HomeController(UserManager<UserModel> userManager,
+        IChannelServices channelServices, IArticleServices articleServices,
+            IAuthorServices authoerServices,
+            IOptions<AppConfigModel> appConfig) : base(userManager, channelServices)
         {
             _articleServices = articleServices;
-            _channelServices = channelServices;
             _authorServices = authoerServices;
-            _userManager = userManager;
             _appConfig = appConfig.Value;
         }
 
         [Route("/{culture}/usr")]
-        public async Task<IActionResult> Index(string culture, string keyword, string sort, int currentPage = 1, int itemsPerPage = 10)
+        public async Task<IActionResult> Index(string culture, string keyword, string sort, int currentPage = 1, int itemsPerPage = 300)
         {
-
-            // Get the current user's information
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user == null)
-            {
-                return Unauthorized();
-            }
+            // Get user info.
+            var user = await GetAuthenticatedUserAsync();
 
             if (string.IsNullOrEmpty(user.OrganizationId))
             {
-                return RedirectToAction("Index","Organization", new { @area="Usr", @culture=culture});
+                return RedirectToAction("Index", "Organization", new { @area = "Usr", @culture = culture });
             }
 
             var view = new UsrHomeIndexViewModel()
             {
                 Channels = await _channelServices.GetChannelsByUserIdAndOrganizationIdAsync(user.OrganizationId, user.Id, keyword, sort, currentPage, itemsPerPage),
                 Culture = culture,
-                GaTagId = _appConfig.Ga.TagId
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View(view);
@@ -63,12 +55,7 @@ namespace wppCms.Areas.Usr.Controllers
         [Route("/{culture}/usr/channel/add")]
         public async Task<IActionResult> AddChannel(ChannelModel channel, string culture)
         {
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user == null)
-            {
-                return Unauthorized();
-            }
+            var user = await GetAuthenticatedUserAsync();
 
             // Check if PermaName is unique within the user's channels
             var isUnique = _channelServices.IsChannelPermaNameUnique(channel.PermaName);
@@ -88,33 +75,47 @@ namespace wppCms.Areas.Usr.Controllers
         }
 
         [HttpPost]
-        [Route("/{culture}/usr/channel/edit/{id}")]
-        public async Task<IActionResult> UpdateChannel(string culture, string id, string title, string permaName, string description, string publicCss, bool isPublic)
+        [Route("/{culture}/usr/channel/{channelId}/update")]
+        public async Task<IActionResult> UpdateChannel(string culture, string channelId, string title,
+       string permaName, string description, string publicCss, bool isPublic, bool isTopPageStaticPage, 
+       string? topPagePermaName, string? defaultCulture)
         {
-           
-            // Fetch the channel by its ID
-            var channelObject = await _channelServices.GetChannelAsync(id);
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
-            // If the channel is not found, return 404
-            if (channelObject.Channel == null)
+            if (channel == null)
             {
+                // Handle the case where the channel is not found
                 return NotFound();
             }
 
-            var channel = channelObject.Channel;
-
             // Update the channel properties
-            channel.Title = title;
-            channel.PermaName = permaName;
-            channel.Description = description;
-            channel.IsPublic = isPublic;
-            channel.PublicCss = publicCss;
+            channel.Channel.Title = title;
+            channel.Channel.PermaName = permaName;
+            channel.Channel.Description = description;
+            channel.Channel.IsPublic = isPublic;
+            channel.Channel.PublicCss = publicCss;
+            channel.Channel.DefaultCulture = defaultCulture;
+
+            // Update the new fields
+            channel.Channel.IsTopPageStaticPage = isTopPageStaticPage;
+            channel.Channel.TopPagePermaName = topPagePermaName;
 
             // Save the updated channel
-            var result = await _channelServices.UpdateChannelAsync(channel);
+            var result = await _channelServices.UpdateChannelAsync(channel.Channel);
+
+            if (result == null)
+            {
+                // Handle the case where the update fails
+                ModelState.AddModelError("", "Failed to update the channel.");
+                return View("Edit", channel); // Return the edit view with the current channel data
+            }
+
+            // Set a success message in TempData
+            TempData["SuccessMessage"] = "Channel updated successfully!";
 
             // Redirect back to the Channel details page after successful update
-            return RedirectToAction("Details", new { culture = culture, channelId = id });
+            return RedirectToAction("Details", new { culture, channelId });
         }
 
         [HttpPost]
@@ -145,28 +146,48 @@ namespace wppCms.Areas.Usr.Controllers
         [Route("/{culture}/usr/channel/{channelId}")]
         public async Task<IActionResult> Details(string culture, string channelId, string keyword)
         {
-            var userId = _userManager.GetUserId(User);
-
-            // Fetch the channel by channelId
-            var channel = await _channelServices.GetChannelAsync(channelId);
-            if (channel == null)
-            {
-                return NotFound();
-            }
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
             var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
 
             channel.Authors = authors;
 
             // Build the view model
-            var viewModel = new UsrHomeChannelDetailsViewModel
+            var viewModel = new UsrHomeDetailsViewModel
             {
                 Channel = channel,
                 Culture = culture,
-                GaTagId = _appConfig.Ga.TagId
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View(viewModel); // Render the view with channel and articles
+        }
+
+        /// <summary>
+        /// Edit channel
+        /// </summary>
+        /// <param name="culture"></param>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        [Route("/{culture}/usr/channel/{channelId}/edit")]
+        public async Task<IActionResult> Edit(string culture, string channelId)
+        {
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
+
+            var view = new UsrHomeEditViewModel()
+            {
+                Channel = channel,
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                Culture = culture
+            };
+
+            return View(view);
         }
 
     }

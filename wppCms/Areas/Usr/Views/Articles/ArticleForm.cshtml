@@ -3,6 +3,9 @@
 
 @{
     ViewData["Title"] = "ArticleForm";
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 
@@ -34,19 +37,10 @@
             margin-left: 10px;
         }
 </style>
-
 <div class="container">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/@Model.Culture/usr">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/@Model.Culture/usr/channel/@Model.ChannelId">Channel</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
-        </ol>
-    </nav>
-
     <h2>@(Model.IsEditMode ? "Edit Article" : "Create New Article")</h2>
 
-    <form action="/@Model.Culture/usr/channel/@Model.ChannelId/article/save" method="post">
+    <form action="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/save" method="post">
         @Html.AntiForgeryToken()
 
         <!-- Validation summary for non-field-specific errors -->
@@ -66,326 +60,178 @@
             </div>
         }
 
-
-        <!-- Conditionally set RowKey for new article -->
-        <input type="hidden" asp-for="RowKey" name="RowKey" value="@(Model.IsEditMode ? Model.RowKey : Guid.NewGuid().ToString())" />
+        <!-- Hidden Fields -->
+        <input type="hidden" name="RowKey" value="@(Model.IsEditMode ? Model.RowKey : Guid.NewGuid().ToString())" />
         <input type="hidden" name="IsEditMode" value="@(Model.IsEditMode ? "true" : "false")" />
-        <input type="hidden" name="channelId" value="@Model.ChannelId" />
-
+        <input type="hidden" name="channelId" value="@Model.Channel.Channel.Id" />
 
         <div class="row">
+            <!-- Left Section -->
             <div class="col-md-8 my-2">
+                <!-- Folders -->
                 <div class="mb-3">
-                    <label asp-for="Folders" class="form-label">Path</label>
-                    <input asp-for="Folders" name="Folders" class="form-control" value="@Model.Folders" />
-                    <span asp-validation-for="Folders" class="text-danger"></span>
+                    <label for="Folders" class="form-label">Path</label>
+                    <input type="text" id="Folders" name="Folders" class="form-control" value="@Model.Folders" />
+                    <div class="text-danger">@ViewData.ModelState["Folders"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
 
+                <!-- Title -->
                 <div class="mb-3">
-                    <label asp-for="Title" class="form-label">Title</label>
-                    <input asp-for="Title" name="Title" class="form-control" value="@Model.Title" />
-                    <span asp-validation-for="Title" class="text-danger"></span>
+                    <label for="Title" class="form-label">Title</label>
+                    <input type="text" id="Title" name="Title" class="form-control" value="@Model.Title" />
+                    <div class="text-danger">@ViewData.ModelState["Title"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
 
+                <!-- Text Editor Section -->
                 <div class="mb-3">
-                    <label asp-for="Text" class="form-label">Text</label>
-                    <textarea asp-for="Text" name="Text" class="form-control" rows="20">@Model.Text</textarea>
-                    <span asp-validation-for="Text" class="text-danger"></span>
+
+                    <textarea id="myEditor" name="Text" rows="10" class="form-control">@Model.Text</textarea>
+                </div>
+               
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label for="Description" class="form-label">Description</label>
+                    <textarea id="Description" name="Description" class="form-control" rows="3">@Model.Description</textarea>
+                    <div class="text-danger">@ViewData.ModelState["Description"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
 
+                <!-- MainImageUrl -->
                 <div class="mb-3">
-                    <label asp-for="Description" class="form-label">Description</label>
-                    <textarea asp-for="Description" name="Description" class="form-control" rows="3">@Model.Description</textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="MainImageUrl" class="form-label">MainImageUrl</label>
-                    <input asp-for="MainImageUrl" name="MainImageUrl" class="form-control" value="@Model.MainImageUrl" />
-                    <span asp-validation-for="MainImageUrl" class="text-danger"></span>
+                    <label for="MainImageUrl" class="form-label">Main Image URL</label>
+                    <input type="text" id="MainImageUrl" name="MainImageUrl" class="form-control" value="@Model.MainImageUrl" />
+                    <div class="text-danger">@ViewData.ModelState["MainImageUrl"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
             </div>
+
+            <!-- Right Section -->
             <div class="col-md-4 my-2">
+                <!-- PermaName -->
                 <div class="mb-3">
-                    <label asp-for="PermaName" class="form-label">PermaName</label>
-                    <input asp-for="PermaName" name="PermaName" value="@Model.PermaName" class="form-control" />
-                    <span asp-validation-for="PermaName" class="text-danger"></span>
+                    <label for="PermaName" class="form-label">PermaName</label>
+                    <input type="text" id="PermaName" name="PermaName" class="form-control" value="@Model.PermaName" />
+                    <div class="text-danger">@ViewData.ModelState["PermaName"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
-                <div class="mb-3">
-                    <label asp-for="AuthorId" class="form-label">Select Author</label>
-                    <select asp-for="AuthorId" name="AuthorId" class="form-select" required>
+
+                <hr />
+                <!-- Is Article Checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="IsArticle" name="IsArticle" class="form-check-input" @(Model.IsArticle ? "checked" : "") />
+                    <label for="IsArticle" class="form-check-label">Is Article</label>
+                </div>
+
+                <!-- Date Fields -->
+                <div id="dateSection" style="display: none;">
+                    <div class="mb-3">
+                        <label for="PublishSince" class="form-label">Publish Since</label>
+                        <input type="datetime-local" id="PublishSince" name="PublishSince" class="form-control" value="@Model.PublishSince" />
+                        <div class="text-danger">@ViewData.ModelState["PublishSince"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="PublishUntil" class="form-label">Publish Until</label>
+                        <input type="datetime-local" id="PublishUntil" name="PublishUntil" class="form-control" value="@Model.PublishUntil" />
+                        <div class="text-danger">@ViewData.ModelState["PublishUntil"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
+                    </div>
+                </div>
+
+                <hr />
+                <!-- Show Author Checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="ShowAuthor" name="ShowAuthor" value="true" class="form-check-input" @(Model.ShowAuthor ? "checked" : "") />
+                    <label for="ShowAuthor" class="form-check-label">Show Author</label>
+                </div>
+
+                <!-- Author Selection -->
+                <div id="authorSection" class="mb-3" style="display: @(Model.ShowAuthor ? "block" : "none")">
+               
+                    <select id="AuthorId" name="AuthorId" class="form-select">
                         <option value="" disabled selected>Select an author</option>
                         @foreach (var author in Model.Authors)
                         {
-                            <option value="@author.RowKey" @(author.RowKey == Model.AuthorId ? "selected" : "")>
+                            <option value="@author.RowKey"
+                            @(author.RowKey == Model.AuthorId ? "selected" : "")>
                                 @author.Title
                             </option>
-
                         }
                     </select>
-                    <span asp-validation-for="AuthorId" class="text-danger"></span>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="Tags" class="form-label">Tags</label>
-                    <input asp-for="Tags" name="Tags" class="form-control" value="@Model.Tags" />
-                    <span asp-validation-for="Tags" class="text-danger"></span>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="PublishSince" class="form-label">Publish Since</label>
-                    <input asp-for="PublishSince" name="PublishSince" class="form-control" type="datetime-local" value="@Model.PublishSince" />
-                    <span asp-validation-for="PublishSince" class="text-danger"></span>
-                    <div>@Model.PublishSince</div>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="PublishUntil" class="form-label">Publish Until</label>
-                    <input asp-for="PublishUntil" name="PublishUntil" class="form-control" type="datetime-local" value="@Model.PublishUntil" />
-                    <span asp-validation-for="PublishUntil" class="text-danger"></span>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="ArticleCulture" class="form-label">Culture</label>
-                    <input asp-for="ArticleCulture" name="ArticleCulture" class="form-control" value="@Model.ArticleCulture" />
-                    <span asp-validation-for="ArticleCulture" class="text-danger"></span>
-                </div>
-                <div class="mb-3">
-                    <button type="submit" class="btn btn-primary">
-                        @(Model.IsEditMode ? "Update Article" : "Create Article")
-                    </button>
+                    <div class="text-danger">@ViewData.ModelState["AuthorId"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
 
                 <hr />
 
-                <h2>Upload Image</h2>
-                <!-- Drag-and-drop area -->
-                <div id="uploadArea" class="upload-area p-4 border border-primary rounded text-center">
-                    <p>Drag and drop an image here, or click to upload.</p>
-                    <input type="file" id="fileInput" accept="image/*" style="display: none;" />
+                <!-- Tags -->
+                <div class="mb-3">
+                    <label for="Tags" class="form-label">Tags</label>
+                    <input type="text" id="Tags" name="Tags" class="form-control" value="@Model.Tags" />
+                    <div class="text-danger">@ViewData.ModelState["Tags"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
 
-                <!-- Uploaded Image Previews -->
-                <div id="previewContainer" class="mt-3" style="display: none;">
-                    <h4>Uploaded Images</h4>
-                    <div id="imageList">
-                        <!-- Dynamically added images and URLs will appear here -->
-                    </div>
+                <hr />
+
+                <!-- Article Culture -->
+                <div class="mb-3">
+                    <label for="ArticleCulture" class="form-label">Culture</label>
+                    <input type="text" id="ArticleCulture" name="ArticleCulture" class="form-control" value="@Model.ArticleCulture" />
+                    <div class="text-danger">@ViewData.ModelState["ArticleCulture"]?.Errors.FirstOrDefault()?.ErrorMessage</div>
                 </div>
-                <div id="codeOutput" class="mt-3" style="display: none;">
-                    <h4>Generated Masonry Code</h4>
-                    <pre id="codeContainer" class="bg-light p-3"></pre>
+
+                <hr />
+
+                <!-- Is Archived Checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="IsArchived" name="IsArchived" value="true" class="form-check-input" @(Model.IsArchived ? "checked" : "") />
+                    <label for="IsArchived" class="form-check-label">Archive Article</label>
                 </div>
+
+                <!-- Is Searchable Checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="IsSearchable" name="IsSearchable" value="true" class="form-check-input" @(Model.IsSearchable ? "checked" : "") />
+                    <label for="IsSearchable" class="form-check-label">Searchable Article</label>
+                </div>
+
+                <hr />
+
+                <!-- Submit Button -->
+                <div class="my-3 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-cloud-arrow-up fa-fw"></i>
+                    </button>
+                </div>
+
             </div>
         </div>
-
-
     </form>
 </div>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const previewContainer = document.getElementById('previewContainer');
-        const imageList = document.getElementById('imageList');
 
-        // Open file input on click
-        uploadArea.addEventListener('click', () => fileInput.click());
+@section Scripts {
 
-        // Handle file selection
-        fileInput.addEventListener('change', async (event) => {
-            const files = Array.from(event.target.files);
-            if (files.length) {
-                await processFiles(files);
-            }
-        });
+    <script src="~/js/tinymce/tinymce.min.js"></script>
+    <script src="~/js/tinymcehandler.js"></script>
+    <script>
+        $(document).ready(function () {
 
-        // Handle drag-and-drop functionality
-        uploadArea.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            uploadArea.classList.add('border-success');
-        });
+            initializeTinyMce('/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/upload-image');
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('border-success');
-        });
+            const $isArticleCheckbox = $('#IsArticle');
+            const $dateSection = $('#dateSection');
+            const $showAuthorCheckbox = $('#ShowAuthor');
+            const $authorSection = $('#authorSection');
+           
+            // Initial visibility on page load
+            $dateSection.toggle($isArticleCheckbox.is(':checked'));
+            $isArticleCheckbox.on('change', function () {
 
-        uploadArea.addEventListener('drop', async (event) => {
-            event.preventDefault();
-            uploadArea.classList.remove('border-success');
-            const files = Array.from(event.dataTransfer.files);
-            if (files.length) {
-                await processFiles(files);
-            }
-        });
-
-        // Process multiple files
-        async function processFiles(files) {
-            for (const file of files) {
-                if (file.type.startsWith('image/')) {
-                    await uploadImage(file);
-                } else {
-                    alert(`Invalid file type: ${file.name}`);
-                }
-            }
-        }
-
-        // Upload an individual image
-        async function uploadImage(file) {
-            const formData = new FormData();
-            formData.append('files', file); // Ensure key matches server-side parameter name
-
-            try {
-                const culture = '@Model.Culture';
-                const channelId = '@Model.ChannelId';
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-                const response = await fetch(`/${culture}/usr/channel/${channelId}/article/upload-assets`, {
-                    method: 'POST',
-                    headers: {
-                        'RequestVerificationToken': token
-                    },
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // If server returns an array, loop through and add previews
-                    if (Array.isArray(data)) {
-                        data.forEach((item) => addPreview(item.thumbnailUrl, item.originalUrl));
-                    } else {
-                        // Handle single file case
-                        addPreview(data.thumbnailUrl, data.originalUrl);
-                    }
-                } else {
-                    const errorMessage = await response.text();
-                    console.error('Upload failed:', errorMessage);
-                    alert(`Failed to upload ${file.name}: ${errorMessage}`);
-                }
-            } catch (error) {
-                console.error(`Error uploading ${file.name}:`, error);
-                alert(`An error occurred while uploading ${file.name}`);
-            }
-        }
-
-        function addPreview(thumbnailUrl, originalUrl) {
-            const imageWrapper = document.createElement('div');
-            imageWrapper.classList.add('image-wrapper', 'mb-3');
-
-            // Thumbnail image
-            const img = document.createElement('img');
-            img.src = thumbnailUrl;
-            img.alt = 'Uploaded Image';
-            img.classList.add('img-thumbnail', 'me-2');
-
-            // URL container with link and copy button
-            const urlContainer = document.createElement('div');
-            urlContainer.classList.add('url-container');
-
-            const link = document.createElement('a');
-            link.href = originalUrl;
-            link.target = '_blank';
-            link.textContent = originalUrl;
-
-            const copyButton = document.createElement('button');
-            copyButton.textContent = 'Copy URL';
-            copyButton.classList.add('btn', 'btn-sm', 'btn-outline-primary', 'ms-2');
-            copyButton.type = 'button'; // Prevents default form submission behavior
-
-            // Show a toast notification when URL is copied
-            copyButton.addEventListener('click', () => {
-                navigator.clipboard.writeText(originalUrl).then(() => {
-                    showToast('URL copied to clipboard!');
-                });
+                $dateSection.toggle($(this).is(':checked'));
             });
 
-            // Append elements
-            urlContainer.appendChild(link);
-            urlContainer.appendChild(copyButton);
-            imageWrapper.appendChild(img);
-            imageWrapper.appendChild(urlContainer);
-            imageList.appendChild(imageWrapper);
-
-            // Make the preview container visible
-            previewContainer.style.display = 'block';
-        }
-
-        // Show a toast notification
-        function showToast(message) {
-            let toastContainer = document.getElementById('toastContainer');
-            if (!toastContainer) {
-                toastContainer = document.createElement('div');
-                toastContainer.id = 'toastContainer';
-                toastContainer.style.position = 'fixed';
-                toastContainer.style.bottom = '20px';
-                toastContainer.style.right = '20px';
-                toastContainer.style.zIndex = '9999';
-                toastContainer.style.maxWidth = '300px';
-                document.body.appendChild(toastContainer);
-            }
-
-            const toast = document.createElement('div');
-            toast.textContent = message;
-            toast.style.background = '#333';
-            toast.style.color = '#fff';
-            toast.style.padding = '10px 20px';
-            toast.style.borderRadius = '5px';
-            toast.style.marginTop = '10px';
-            toast.style.boxShadow = '0px 2px 6px rgba(0, 0, 0, 0.2)';
-            toast.style.opacity = '1';
-            toast.style.transition = 'opacity 0.5s ease';
-
-            toastContainer.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 500);
-            }, 3000);
-        }
-
-        // Generate Masonry Markup
-        const generateCodeButton = document.createElement('button');
-        generateCodeButton.textContent = 'Generate Masonry Code';
-        generateCodeButton.classList.add('btn', 'btn-primary', 'mt-3');
-        generateCodeButton.type = 'button';
-        generateCodeButton.addEventListener('click', () => {
-            const imageUrls = Array.from(imageList.querySelectorAll('a')).map(a => a.href); // Get all image URLs
-
-            if (imageUrls.length === 0) {
-                alert('No images to generate markup.');
-                return;
-            }
-
-            const masonryMarkup = generateMasonryMarkup(imageUrls);
-
-            const codeContainer = document.getElementById('codeContainer');
-            const codeOutput = document.getElementById('codeOutput'); // Get the container for displaying code
-
-            if (codeContainer) {
-                codeContainer.textContent = masonryMarkup; // Add the generated markup to the container
-            }
-
-            if (codeOutput) {
-                codeOutput.style.display = 'block'; // Make the code output section visible
-            }
-
-            // Append Masonry markup to the DOM if needed
-            const masonryContainer = document.querySelector('#masonryContainer');
-            if (masonryContainer) {
-                masonryContainer.innerHTML = masonryMarkup;
-                initializeMasonry('#masonryContainer'); // Initialize Masonry after images are loaded
-            }
-        });
-
-        previewContainer.appendChild(generateCodeButton);
-
-        function generateMasonryMarkup(imageUrls) {
-            let masonryMarkup = `<div id="masonryContainer" class="row">\n`;
-            imageUrls.forEach(url => {
-                masonryMarkup += `  <div class="col-md-4 mb-4">\n`;
-                masonryMarkup += `    <img src="${url}" class="img-fluid" alt="Uploaded Image">\n`;
-                masonryMarkup += `  </div>\n`;
+            // Toggle author section visibility
+            $authorSection.toggle($showAuthorCheckbox.is(':checked'));
+            $showAuthorCheckbox.on('change', function () {
+                $authorSection.toggle($(this).is(':checked'));
             });
-            masonryMarkup += `</div>`;
-            return masonryMarkup;
-        }
-    });
-</script>
+
+        });
+    </script>
+}
+
+

@@ -118,31 +118,31 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Title" xml:space="preserve">
-    <value>OmniCon – Access Your Content from Anywhere</value>
+    <value>OMNICON.cloud – Access Your Content from Anywhere</value>
   </data>
   <data name="MetaDescription" xml:space="preserve">
-    <value>OmniCon is a fast, flexible headless CMS that allows you to manage and deliver content via API. Suitable for developers, it supports raw JSON files, blog articles, and more.</value>
+    <value>OMNICON.cloud is a fast, flexible headless CMS that allows you to manage and deliver content via API. Suitable for developers, it supports raw JSON files, blog articles, and more.</value>
   </data>
   <data name="MetaKeywords" xml:space="preserve">
-    <value>OmniCon, headless CMS, content management, API content, flexible CMS, raw JSON CMS, blog CMS, content delivery, scalable CMS</value>
+    <value>OMNICON.cloud, headless CMS, content management, API content, flexible CMS, raw JSON CMS, blog CMS, content delivery, scalable CMS</value>
   </data>
   <data name="OgTitle" xml:space="preserve">
-    <value>OmniCon – Access Your Content from Anywhere</value>
+    <value>OMNICON.cloud – Access Your Content from Anywhere</value>
   </data>
   <data name="OgDescription" xml:space="preserve">
-    <value>OmniCon is a fast and flexible headless CMS with powerful API access. Manage your content seamlessly and deliver it across any platform.</value>
+    <value>OMNICON.cloud is a fast and flexible headless CMS with powerful API access. Manage your content seamlessly and deliver it across any platform.</value>
   </data>
   <data name="TwitterTitle" xml:space="preserve">
-    <value>OmniCon – Fast &amp; Flexible Headless CMS</value>
+    <value>OMNICON.cloud – Fast &amp; Flexible Headless CMS</value>
   </data>
   <data name="TwitterDescription" xml:space="preserve">
-    <value>Manage your content with OmniCon and deliver it via API to any platform. Store blog articles, raw JSON, and more.</value>
+    <value>Manage your content with OMNICON.cloud and deliver it via API to any platform. Store blog articles, raw JSON, and more.</value>
   </data>
   <data name="MainHeading" xml:space="preserve">
-    <value>OmniCon – Fast &amp; Flexible Headless CMS</value>
+    <value>OMNICON.cloud – Fast &amp; Flexible Headless CMS</value>
   </data>
   <data name="IntroParagraph" xml:space="preserve">
-    <value>OmniCon lets you manage your content effortlessly and access it anywhere. With our powerful API, you can store and serve anything from blog articles to raw JSON files, making content integration seamless and flexible.</value>
+    <value>OMNICON.cloud lets you manage your content effortlessly and access it anywhere. With our powerful API, you can store and serve anything from blog articles to raw JSON files, making content integration seamless and flexible.</value>
   </data>
   <data name="Dashboard" xml:space="preserve">
     <value>Go to Dashboard</value>
@@ -190,13 +190,13 @@
     <value>Customizable &amp; Scalable</value>
   </data>
   <data name="FeatureScalableDescription" xml:space="preserve">
-    <value>OmniCon grows with you. Easily customize the platform to meet your specific needs, and scale effortlessly as your content demands increase.</value>
+    <value>OMNICON.cloud grows with you. Easily customize the platform to meet your specific needs, and scale effortlessly as your content demands increase.</value>
   </data>
   <data name="PricingHeading" xml:space="preserve">
     <value>Pricing</value>
   </data>
   <data name="PricingSubHeading" xml:space="preserve">
-    <value>OmniCon offers free access for light users, and flexible pricing for those needing higher API call limits.</value>
+    <value>OMNICON.cloud offers free access for light users, and flexible pricing for those needing higher API call limits.</value>
   </data>
   <data name="FreePlan" xml:space="preserve">
     <value>Free</value>
@@ -235,6 +235,6 @@
     <value>Deploy the program onto your own environment and use it for free. You can find the repository here:</value>
   </data>
   <data name="GitHubRepositoryLinkText" xml:space="preserve">
-    <value>Omnicon Cloud GitHub Repository</value>
+    <value>OMNICON.cloud Cloud GitHub Repository</value>
   </data>
 </root>

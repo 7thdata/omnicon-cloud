@@ -35,7 +35,10 @@ namespace wppCms.Areas.Advertiser.Models
         public ChannelViewModel Channel { get; set; }
         public AdCampaignModel AdCampaign { get; set; }
         public AdGroupModel AdGroup { get; set; }
-        public PaginationModel<AdCreativeModel> AdCreative { get; set; }
+        public List<AdCreativeModel> AddedCreatives { get; set; }
+        public List<AdCreativeModel> AddableCreatives { get; set; }
+        public string Keyword { get;set; }
+        public string Sort { get; set; }
     }
 
     /// <summary>
@@ -44,7 +47,7 @@ namespace wppCms.Areas.Advertiser.Models
     public class AdvertiserHomeAdsViewModel : PageViewModel
     {
         public ChannelViewModel Channel { get; set; }
-        public PaginationModel<AdCreativeModel> AdCreative { get; set; }
+        public List<AdCreativeModel> AdCreative { get; set; }
     }
 
     /// <summary>
@@ -52,6 +55,7 @@ namespace wppCms.Areas.Advertiser.Models
     /// </summary>
     public class AdvertiserHomeAdDetailsViewModel : PageViewModel
     {
+        public ChannelViewModel Channel { get; set; }
         public AdCreativeModel AdCreative { get; set; }
 
         public PaginationModel<AdCampaignModel> AdCampaigns { get; set; }

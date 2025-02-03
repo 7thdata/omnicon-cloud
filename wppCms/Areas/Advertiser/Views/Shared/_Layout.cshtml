@@ -25,10 +25,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Font Awsome-->
+    @if (ViewData["FontAwsome"] != null)
+    {
+        <script src="@ViewData["FontAwsome"]" crossorigin="anonymous"></script>
+    }
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -45,48 +47,28 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-                <a class="navbar-brand" href="/en/usr">OmniCon User Panel</a>
+                <a class="navbar-brand" href="/@ViewData["Culture"]/usr">OmniCon User Panel</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    description
-                                </span>
-                                Articles
-                            </a>
-                        </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="/en/ads/organization/@ViewData["ChannelId"]">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    campaign
-                                </span>
+                                <i class="fa-solid fa-layer-group fa-fw"></i>
                                 Campaigns
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/en/ad/organization/@ViewData["ChannelId"]/creatives">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    ad_units
-                                </span>
+                                <i class="fa-solid fa-rectangle-ad fa-fw"></i>
                                 Ads
                             </a>
                         </li>
 
                     </ul>
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/en/usr/usermanagement">
-                                <span class="material-icons material-symbols-outlined" style="margin-right: 5px;">
-                                    manage_accounts
-                                </span>
-                                User Management
-                            </a>
-                        </li>
-                    </ul>
+                    
                 </div>
 
             </div>

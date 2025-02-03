@@ -1,5 +1,7 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using Azure.Search.Documents.Indexes.Models;
+using Azure.Search.Documents.Indexes;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -26,6 +28,82 @@ namespace clsCms.Models
         public bool IsArchived { get; set; }
     }
 
+    public class ArticleSearchModel
+    {
+        [SimpleField(IsKey = true, IsFilterable = true)]
+        public string RowKey { get; set; } // Unique identifier for the article
+
+        [SearchableField(IsFilterable = true)]
+        public string PartitionKey { get; set; } // Channel ID for partitioning
+
+        [SearchableField(IsFilterable = false, IsSortable = true)]
+
+        public string Title { get; set; } // Article title
+        [SearchableField]
+        public string Description { get; set; } // Description
+        public string MainImageUrl { get; set; } // Main Image
+        [SearchableField]
+        public string Text { get; set; } // Full-text content of the article
+
+        [SearchableField(IsFilterable = true, IsFacetable = true)]
+        public string Folders { get; set; } // Hierarchical folders like /folder1/folder2
+
+        [SimpleField(IsKey = false, IsFilterable = true, IsFacetable = true)]
+        public IEnumerable<string> Tags { get; set; }
+
+        [SimpleField(IsFilterable = true, IsFacetable = true)]
+        public bool IsArticle { get; set; } // Indicates if the record is an article
+
+        [SimpleField(IsFilterable = true, IsFacetable = true)]
+        public bool IsArchived { get; set; } // Indicates if the article is archived
+
+        [SimpleField(IsFilterable = true, IsFacetable = true)]
+        public bool ShowAuthor { get; set; } // Indicates if the author should be displayed
+
+        [SearchableField(IsFilterable = true)]
+        public string PermaName { get; set; } // Author's name
+
+        [SearchableField(IsFilterable = true)]
+        public string AuthorName { get; set; } // Author's name (permaname)
+
+        [SimpleField(IsFilterable = true, IsSortable =true)]
+        public DateTimeOffset? PublishSince { get; set; } // Publish start date
+
+        [SimpleField(IsFilterable = true)]
+        public DateTimeOffset? PublishUntil { get; set; } // Publish end date
+
+        [SimpleField(IsFilterable = true, IsSortable = true)]
+        public DateTimeOffset? UpdatedAt { get; set; } // Last updated date 
+
+        [SimpleField()]
+        public int Version { get; set; }
+
+        [SimpleField(IsFilterable = true)]
+        public string Culture { get; set; } // Article culture (e.g., "en-US")
+
+        [SearchableField(IsFilterable = true)]
+        public string CanonicalUrl { get; set; } // SEO-friendly URL
+
+    }
+
+    public class FacetValue
+    {
+        public string Value { get; set; }
+        public long Count { get; set; }
+    }
+
+    public class ArticleCommentModel
+    {
+        public string CommentId { get; set; }
+        public string CommentText { get; set; }
+    
+        public string CommentById { get; set; }
+        public string CommentByName { get; set; }
+        public string CommentByIconUrl { get; set; }
+
+        public DateTimeOffset Timestamp { get; set; }
+    }
+
     /// <summary>
     /// ArticleModel
     /// </summary>
@@ -43,7 +121,7 @@ namespace clsCms.Models
         public string Title { get; set; } // Title of the article, must
         public string Text { get; set; } // Article content, optional if github url is provided
         public string Description { get; set; } // SEO Description, must
-        public string GithubUrl { get; set; } // If we want text from github, optional
+        public string? GithubUrl { get; set; } // If we want text from github, optional
         public string AuthorId { get; set; } // The ID of the author (user), must
         public string AuthorName { get; set; } // The name of the author (user), must, but usually drawn from author id.
 
@@ -51,7 +129,7 @@ namespace clsCms.Models
         public string Culture { get; set; } // Culture or language code (e.g., "en-US")
         public string? Tags { get; set; } // Tags related to the article, "," separated
 
-        public DateTimeOffset PublishSince { get; set; } // Date from when the article is published, 
+        public DateTimeOffset? PublishSince { get; set; } // Date from when the article is published, 
         public DateTimeOffset? PublishUntil { get; set; } // Optional: Date until the article is published
 
         public bool IsHtml { get; set; } // Indicates if the article content is in HTML format,if text is html
@@ -59,7 +137,24 @@ namespace clsCms.Models
         public string? RedirectUrl { get; set; } // Redirect URL if the article has been moved
         public bool IsMoved { get; set; } // Indicates if the article has been moved
         public bool IsArchived { get; set; } // Soft delete/archive flag
+        public bool IsArticle { get; set; } // If not it is page.
+        public bool IsSearchable { get; set; } // If not it is not searchable.
+        public bool ShowAuthor { get; set; }
 
+        public string? CommentJsonString { get; set; }
+        public int Version { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public string? ArticleRevisionLogJsonString { get; set; }
+    }
+
+    public class  ArticleRevisionLogModel
+    {
+        public string RevisionId { get; set; }
+        public string RevisedArticleId { get; set; }
+        public string OriginalArticleId { get; set;}
+        public string RevisedBy { get; set; }
+        public DateTimeOffset RevisedAt { get; set; }
+        public string RevisedSummary { get; set; }
     }
 
     /// <summary>
@@ -180,7 +275,7 @@ namespace clsCms.Models
         [MaxLength(36)]
         public string ChannelId { get; set; }
         [MaxLength(36)]
-        public string FolderId { get; set; }
+        public string? FolderId { get; set; }
         [MaxLength(36)]
         public string AuthorId { get; set; }
 

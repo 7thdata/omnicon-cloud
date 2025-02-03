@@ -4,7 +4,10 @@
 @{
     ViewData["Title"] = "Advertiser Dashboard";
     Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
-    ViewData["ChannelId"] = "";
+    ViewData["GaTagId"] = Model.GaTagId;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
 }
 
 <div class="container my-5">

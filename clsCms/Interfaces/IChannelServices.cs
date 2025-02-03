@@ -19,11 +19,19 @@ namespace clsCms.Interfaces
         Task<ChannelModel> CreateChannelAsync(ChannelModel channel);
 
         /// <summary>
-        /// Retrieves a channel by its ID.
+        /// Get all channels for admin.
         /// </summary>
-        /// <param name="channelId">The ID of the channel to retrieve.</param>
-        /// <returns>The ChannelModel object if found, otherwise null.</returns>
-        Task<ChannelViewModel> GetChannelAsync(string channelId);
+        /// <returns></returns>
+        Task<List<ChannelModel>> AdminGetAllChannels();
+
+
+        /// <summary>
+        /// Get channel by id.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        Task<ChannelViewModel?> GetChannelAsync(string channelId, string? userId = null);
 
         /// <summary>
         /// Get only if the channel is public.
@@ -115,6 +123,38 @@ namespace clsCms.Interfaces
         /// <param name="includeArchived">If true, includes archived memberships in the result. If false, excludes them.</param>
         /// <returns>A list of ChannelMembershipViewModel objects representing the memberships.</returns>
         List<ChannelMembershipViewModel> GetChannelMemberships(string channelId, bool includeArchived = false);
+
+        #endregion
+
+        #region manage subscribers
+
+        /// <summary>
+        /// Get subscribers.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        List<ChannelSubscriberModel> GetSubscribers(string channelId);
+
+        /// <summary>
+        /// Subscribe
+        /// </summary>
+        /// <param name="channeId"></param>
+        /// <param name="subseriberId"></param>
+        /// <param name="email"></param>
+        /// <param name="subscriberLevel"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<ChannelSubscriberModel?> SubscribeToTheChannelAsync(string channeId, string subseriberId,
+            string email, string subscriberLevel, string name);
+
+        /// <summary>
+        /// Ubsubsriber
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="subscriberId"></param>
+        /// <returns></returns>
+        Task<ChannelSubscriberModel?> UnsbsribeToChannelAsync(string channelId, string subscriberId);
+
 
         #endregion
     }

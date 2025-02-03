@@ -1,10 +1,12 @@
-﻿using clsCms.Interfaces;
+﻿
+using clsCms.Interfaces;
 using clsCms.Models;
 using clsCMs.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -63,11 +65,23 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Retrieves a channel by its ID.
+        /// Get all channels (admin only)
         /// </summary>
-        /// <param name="channelId">The ID of the channel to retrieve.</param>
-        /// <returns>The ChannelModel object if found, otherwise null.</returns>
-        public async Task<ChannelViewModel> GetChannelAsync(string channelId)
+        /// <returns></returns>
+        public async Task<List<ChannelModel>> AdminGetAllChannels()
+        {
+            var channels = await (from c in _db.Channels
+                                  select c).ToListAsync();
+            return channels;
+        }
+
+        /// <summary>
+        /// Get chanel view of the channel id and user id.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<ChannelViewModel?> GetChannelAsync(string channelId, string? userId = null)
         {
             // Fetch the channel data from the database (without calling GetChannelMemberships inside the query)
             var channel = await (from c in _db.Channels
@@ -82,14 +96,20 @@ namespace clsCms.Services
             // Now call GetChannelMemberships in-memory after fetching the channel
             var members = GetChannelMemberships(channelId, false);
 
-            // Get search history
-
-
             // Create the ChannelViewModel and assign the members
-            var channelViewModel = new ChannelViewModel(channel)
+            var channelViewModel = new ChannelViewModel(channel, members);
+
+            // Get membership
+            if (!string.IsNullOrEmpty(userId))
             {
-                Members = members
-            };
+                var membership = members.FirstOrDefault(m => m.User.Id == userId);
+                if (membership == null)
+                {
+                    return null;
+                }
+
+                channelViewModel.Membership = membership;
+            }
 
             return channelViewModel;
         }
@@ -101,6 +121,8 @@ namespace clsCms.Services
         /// <returns></returns>
         public async Task<ChannelViewModel> GetPublicChannelByPermaNameAsync(string permanName)
         {
+            // Loggedin User?
+
             // Fetch the channel data from the database (without calling GetChannelMemberships inside the query)
             var channel = await (from c in _db.Channels
                                  where c.PermaName == permanName && c.IsPublic
@@ -113,18 +135,14 @@ namespace clsCms.Services
 
             // Now call GetChannelMemberships in-memory after fetching the channel
             var members = GetChannelMemberships(channel.Id, false);
-            
+
             // Create the ChannelViewModel and assign the members
-            var channelViewModel = new ChannelViewModel(channel)
-            {
-                Channel = channel,
-                Members = members
-            };
+            var channelViewModel = new ChannelViewModel(channel, members);
 
             return channelViewModel;
         }
 
-        
+
         /// <summary>
         /// Get ChannelViews by OrganizationId and UserId
         /// </summary>
@@ -137,11 +155,12 @@ namespace clsCms.Services
         /// <returns></returns>
         public async Task<PaginationModel<ChannelViewModel>> GetChannelsByUserIdAndOrganizationIdAsync(string organizationId, string userId, string keyword, string sort, int currentPage, int itemsPerPage)
         {
-            var channles = from c in _db.Channels 
-                           join m in _db.ChannelMemberships on c.Id equals m.ChannelId 
-                           where c.OrganizationId == organizationId && 
+            var channles = from c in _db.Channels
+                           join m in _db.ChannelMemberships on c.Id equals m.ChannelId
+                           where c.OrganizationId == organizationId &&
                            c.IsArchived == false && m.IsArchived == false && m.IsAccepted &&
-                           m.UserId == userId select c;
+                           m.UserId == userId
+                           select c;
 
             // Apply filtering by keyword if provided
             if (!string.IsNullOrEmpty(keyword))
@@ -167,13 +186,13 @@ namespace clsCms.Services
                         channles = channles.OrderBy(c => c.Title);
                         break;
                     default:
-                        channles = channles.OrderByDescending(c => c.Updated);
+                        channles = channles.OrderBy(c => c.Title);
                         break;
                 }
             }
             else
             {
-                channles = channles.OrderByDescending(c => c.Updated);
+                channles = channles.OrderBy(c => c.Title);
             }
 
             // Get the total item count for pagination
@@ -189,7 +208,7 @@ namespace clsCms.Services
             foreach (var channel in channels)
             {
                 var members = GetChannelMemberships(channel.Id, false); // This is now evaluated in memory
-                channelViewModels.Add(new ChannelViewModel(channel) { Members = members });
+                channelViewModels.Add(new ChannelViewModel(channel, members));
             }
 
             // Return the paginated result
@@ -221,7 +240,7 @@ namespace clsCms.Services
                 throw new KeyNotFoundException($"Channel with ID {channel.Id} not found.");
             }
 
-            // We need to make sure permaname is unique if it has changed
+            // Ensure PermaName is unique if it has changed
             if (original.PermaName != channel.PermaName && !IsChannelPermaNameUnique(channel.PermaName))
             {
                 throw new InvalidOperationException($"PermaName {channel.PermaName} is already in use.");
@@ -234,6 +253,11 @@ namespace clsCms.Services
             original.PermaName = channel.PermaName;
             original.Updated = DateTimeOffset.UtcNow;
             original.PublicCss = channel.PublicCss;
+            original.DefaultCulture = channel.DefaultCulture;
+
+            // Update the new fields
+            original.IsTopPageStaticPage = channel.IsTopPageStaticPage;
+            original.TopPagePermaName = channel.TopPagePermaName;
 
             // Update the channel in the database
             _db.Channels.Update(original);
@@ -431,7 +455,10 @@ namespace clsCms.Services
                                       select new
                                       {
                                           Membership = m,
-                                          User = u
+                                          User = new ProfileViewModel(u.Id, u.UserName, u.NickName, u.Email, u.IconImage, u.CreatedOn)
+                                          {
+                                              Introduction = u.Introduction
+                                          }
                                       };
 
             // If includeArchived is false, filter out archived memberships
@@ -446,13 +473,90 @@ namespace clsCms.Services
             // Perform the in-memory mapping from raw data to ChannelMembershipViewModel
             var result = channelMembers.Select(m => new ChannelMembershipViewModel(
                 m.Membership,
-                new ProfileViewModel(m.User.Id, m.User.UserName, m.User.Email, m.User.NickName, m.User.IconImage, m.User.CreatedOn)
-                {
-                    Introduction = m.User.Introduction
-                })
+                m.User)
             ).ToList();
 
             return result;
+        }
+
+
+        #endregion
+
+        #region subscription
+
+        /// <summary>
+        /// Get subscribers.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        public List<ChannelSubscriberModel> GetSubscribers(string channelId)
+        {
+            var subscribers = (from s in _db.ChannelSubscribers
+                               where s.ChannelId == channelId
+                               select s).ToList();
+
+            return subscribers;
+        }
+
+        /// <summary>
+        /// Subscribe
+        /// </summary>
+        /// <param name="channeId"></param>
+        /// <param name="subseriberId"></param>
+        /// <param name="email"></param>
+        /// <param name="subscriberLevel"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public async Task<ChannelSubscriberModel?> SubscribeToTheChannelAsync(string channeId, string subseriberId,
+            string email, string subscriberLevel, string name)
+        {
+
+            var original = (from o in _db.ChannelSubscribers
+                            where o.ChannelId == channeId && o.Id == subseriberId
+                            select o).FirstOrDefault();
+
+            if (original == null)
+            {
+                _db.ChannelSubscribers.Add(new ChannelSubscriberModel
+                {
+                    Id = subseriberId,
+                    ChannelId = channeId,
+                    SubscriberSince = DateTimeOffset.UtcNow,
+                    Email = email,
+                    SubscriberLevel = subscriberLevel,
+                    Name = name
+                });
+
+                await _db.SaveChangesAsync();
+            }
+
+            return null;
+
+        }
+
+        /// <summary>
+        /// Ubsubsriber
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="subscriberId"></param>
+        /// <returns></returns>
+        public async Task<ChannelSubscriberModel?> UnsbsribeToChannelAsync(string channelId, string subscriberId)
+        {
+            var original = (from o in _db.ChannelSubscribers
+                            where o.ChannelId == channelId
+                           && o.Id == subscriberId
+                            select o).FirstOrDefault();
+
+            if (original == null)
+            {
+                return null;
+
+            }
+
+            _db.ChannelSubscribers.Remove(original);
+            await _db.SaveChangesAsync();
+
+            return original;
         }
 
 

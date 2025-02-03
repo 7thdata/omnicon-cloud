@@ -1,0 +1,73 @@
+﻿@using wppCms.Areas.Usr.Models
+@model UsrHomeEditViewModel
+
+@{
+    ViewData["ChannelId"] = Model.Channel.Channel.Id;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
+
+    ViewData["Title"] = "Channel - " + Model.Channel.Channel.Title;
+    Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+
+    <!-- Edit Channel Form -->
+    <form action="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/update" method="post">
+        <div class="row">
+            <div class="col-md-6 my-2">
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label for="channelName" class="form-label">Channel Name</label>
+                    <input type="text" class="form-control" id="channelName" name="Title" value="@Model.Channel.Channel.Title" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
+                    <input type="text" class="form-control" id="channelPermaName" name="PermaName" value="@Model.Channel.Channel.PermaName" required
+                           pattern="[a-z0-9\-]+"
+                           title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
+                    <span asp-validation-for="PermaName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="channelDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="channelDescription" name="Description">@Model.Channel.Channel.Description</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="defaultCulture" class="form-label">Default Culture</label>
+                    <input type="text" class="form-control" id="defaultCulture" value="@Model.Channel.Channel.DefaultCulture" name="DefaultCulture" required>
+                </div>
+            </div>
+            <div class="col-md-6 my-2">
+
+                <div class="mb-3">
+                    <label for="PublicCss" class="form-label">CSS</label>
+                    <textarea class="form-control" id="PublicCss" rows="5" name="PublicCss">@Model.Channel.Channel.PublicCss</textarea>
+                </div>
+                <!-- Checkbox for IsTopPageStaticPage -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="isTopPageStaticPage" value="true" name="IsTopPageStaticPage" @(Model.Channel.Channel.IsTopPageStaticPage ? "checked" : "")>
+                    <label class="form-check-label" for="isTopPageStaticPage">Is Top Page a Static Page</label>
+                </div>
+
+                <!-- Input for TopPagePermaName -->
+                <div class="mb-3">
+                    <label for="topPagePermaName" class="form-label">Top Page PermaName</label>
+                    <input type="text" class="form-control" id="topPagePermaName" name="TopPagePermaName" value="@Model.Channel.Channel.TopPagePermaName">
+                </div>
+
+                <!-- Checkbox for IsPublic -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="isPublicEdit" value="true" name="isPublic" @(Model.Channel.Channel.IsPublic ? "checked" : "")>
+                    <label class="form-check-label" for="isPublicEdit">Make Channel Public</label>
+                </div>
+                <div class="py-2 text-end">
+                    <button type="submit" class="btn btn-primary">Update Channel</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

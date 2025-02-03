@@ -31,7 +31,7 @@ namespace fncTickWorks.Functions
         /// <param name="myTimer">TimerTrigger binding providing trigger metadata.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         [Function("HourlyArticleImpressionsAggregationFunction")]
-        public async Task Run([TimerTrigger("0 0 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 0 * * * *")] TimerInfo myTimer, bool isDebug = false)
         {
             // Log the time of function execution for debugging purposes.
             _logger.LogInformation($"C# Timer trigger (HourlyArticleImpressionsAggregationFunction) function executed at: {DateTime.Now}");

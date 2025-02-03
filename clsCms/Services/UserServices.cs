@@ -292,5 +292,69 @@ namespace clsCms.Services
         }
 
         #endregion
+
+        #region login link
+
+        /// <summary>
+        /// Issue login link
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<LoginLinkModel> IssueLoginLinkAsync(string userId)
+        {
+            var loginLink = new LoginLinkModel
+            {
+                UserId = userId,
+                LinkId = Guid.NewGuid().ToString(),
+                Expire = DateTimeOffset.UtcNow.AddHours(1)
+            };
+
+            _context.LoginLinks.Add(loginLink);
+
+            await _context.SaveChangesAsync();
+
+            return loginLink;
+        }
+
+        /// <summary>
+        /// Consume login link
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="linkId"></param>
+        /// <returns></returns>
+        public async Task<bool> ConsumeLoginLinkAsync(string userId, string linkId)
+        {
+            var original = await (from l in _context.LoginLinks
+                                  where l.UserId == userId && l.LinkId == linkId
+                                  select l).FirstOrDefaultAsync();
+
+            if(original == null)
+            {
+                return false;
+            }
+
+            _context.LoginLinks.Remove(original);
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Clean expired login link
+        /// </summary>
+        /// <returns></returns>
+        public async Task CleanExpiredLoginLinkAsync()
+        {
+            var expiredLinks = from l in _context.LoginLinks
+                               where l.Expire < DateTimeOffset.UtcNow
+                               select l;
+
+            _context.LoginLinks.RemoveRange(expiredLinks);
+
+            await _context.SaveChangesAsync();
+        }
+
+        #endregion
     }
 }

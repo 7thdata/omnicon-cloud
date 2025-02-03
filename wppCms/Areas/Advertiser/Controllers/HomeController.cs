@@ -3,6 +3,8 @@ using clsCms.Interfaces;
 using clsCms.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Options;
+using Microsoft.Extensions.Options;
 using wppCms.Areas.Advertiser.Models;
 
 namespace wppCms.Areas.Advertiser.Controllers
@@ -13,13 +15,17 @@ namespace wppCms.Areas.Advertiser.Controllers
     {
         private readonly IAdvertiserServices _advertiserServices;
         private readonly IChannelServices _channelServices;
+        private readonly ILogger<HomeController> _logger;
+        private readonly AppConfigModel _appConfig;
 
         public HomeController(IAdvertiserServices advertiserServices,
-            IChannelServices channelServices)
+            IChannelServices channelServices,
+            ILogger<HomeController> logger, IOptions<AppConfigModel> appConfig)
         {
             _advertiserServices = advertiserServices;
             _channelServices = channelServices;
-
+            _logger = logger;
+            _appConfig = appConfig.Value;
         }
 
         /// <summary>
@@ -48,7 +54,9 @@ namespace wppCms.Areas.Advertiser.Controllers
             {
                 Ads = campaigns,
                 Culture = culture,
-                Channel = channel
+                Channel = channel,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(view);
@@ -127,7 +135,9 @@ namespace wppCms.Areas.Advertiser.Controllers
                 Channel = channel,
                 AdCampaign = campaign,
                 AdGroups = adGroups,
-                Culture = culture
+                Culture = culture,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(viewModel);
@@ -202,21 +212,69 @@ namespace wppCms.Areas.Advertiser.Controllers
 
             // Get pagination of ads
 
-            // Fetch ad creative IDs from the mapping table
-            var adCreativeIds = await _advertiserServices.GetAdCreativeIdsByAdGroupAsync(channelId, adGroupId);
-
-            // Fetch paginated ad creatives based on the IDs
-            var adCreatives = await _advertiserServices.GetAdCreativesAsync(adCreativeIds, keyword, sort, currentPage, itemsPerPage);
-
             var view = new AdvertiserHomeAdGroupDetailsViewModel()
             {
                 Culture = culture,
                 Channel = channel,
                 AdCampaign = campaign,
                 AdGroup = adGroup,
-                AdCreative = adCreatives
+
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                GaTagId = _appConfig.Ga.TagId
             };
+
+
+            // Fetch ad creative IDs from the mapping table
+            var adCreativeIds = await _advertiserServices.GetAdCreativeIdsByAdGroupAsync(channelId, adGroupId);
+            var fullAdCreativeList = await _advertiserServices.GetAdCreativesAsync(channelId, "", "", 1000);
+
+            if (adCreativeIds.Count > 0)
+            {
+                // Fetch paginated ad creatives based on the IDs
+                var adCreatives = await _advertiserServices.GetAdCreativesFromIdsAsync(channelId, adCreativeIds, keyword, sort, 1000);
+
+                view.AddedCreatives = adCreatives;
+
+                // Use HashSet for faster lookups
+                var adCreativeKeys = new HashSet<string>(adCreatives.Select(ac => ac.RowKey));
+
+                fullAdCreativeList = fullAdCreativeList
+                    .Where(ad => !adCreativeKeys.Contains(ad.RowKey))
+                    .ToList();
+            }
+
+            view.AddableCreatives = fullAdCreativeList;
+
             return View(view);
+        }
+
+
+        [HttpPost("/{culture}/ads/organization/{channelId}/campaign/{campaignId}/adgroup/{adGroupId}/addad")]
+        public async Task<IActionResult> AddAdToAdGroup(string culture, string channelId, string campaignId,
+    string adGroupId, string adId)
+        {
+            try
+            {
+                // Create the mapping between AdGroup and AdCreative
+                await _advertiserServices.CreateAdGroupAdCreativeMappingAsync(new AdGroupAdCreativeMappingModel()
+                {
+                    AdCreativeId = adId,
+                    AdGroupId = adGroupId,
+                    PartitionKey = channelId,
+                    RowKey = Guid.NewGuid().ToString(),
+                    Timestamp = DateTimeOffset.UtcNow,
+                });
+
+                // Set TempData success message
+                TempData["SuccessMessage"] = "Ad successfully added to the ad group.";
+            }
+            catch (Exception ex)
+            {
+                // Set TempData error message in case of an exception
+                TempData["ErrorMessage"] = $"An error occurred while adding the ad: {ex.Message}";
+            }
+
+            return RedirectToAction("AdGroupDetails", new { culture, channelId, campaignId, adGroupId });
         }
 
         /// <summary>
@@ -230,7 +288,7 @@ namespace wppCms.Areas.Advertiser.Controllers
         /// <returns></returns>
         [Route("/{culture}/ad/organization/{channelId}/creatives")]
         public async Task<IActionResult> Ads(string culture, string channelId,
-            string keyword, string sort, int currentPage = 1, int itemsPerPage = 10)
+            string keyword, string sort, int currentPage = 1, int itemsPerPage = 1000)
         {
             // Fetch the channel details
             var channel = await _channelServices.GetChannelAsync(channelId);
@@ -241,13 +299,16 @@ namespace wppCms.Areas.Advertiser.Controllers
 
             // Fetch the list of ad creatives with pagination
             var adCreatives = await _advertiserServices.GetAdCreativesAsync(
-                channelId, keyword, sort, currentPage, itemsPerPage);
+                channelId, keyword, sort, itemsPerPage);
 
             // Create the view model
             var viewModel = new AdvertiserHomeAdsViewModel
             {
                 Channel = channel,
-                AdCreative = adCreatives
+                AdCreative = adCreatives,
+                Culture = culture,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                GaTagId = _appConfig.Ga.TagId
             };
 
             return View(viewModel);
@@ -259,23 +320,44 @@ namespace wppCms.Areas.Advertiser.Controllers
         public async Task<IActionResult> CreateAdCreative(string culture, string channelId, AdCreativeModel model)
         {
 
-            // Assign PartitionKey and RowKey
-            model.PartitionKey = channelId; // Organization/Channel ID
-            model.RowKey = Guid.NewGuid().ToString(); // Unique ID for the Ad Creative
 
-            // Set default metadata
+            if (!model.Validate(out var validationError))
+            {
+                TempData["ErrorMessage"] = validationError;
+                return View(model);
+            }
+
+            model.PartitionKey = channelId;
+            model.RowKey = Guid.NewGuid().ToString();
             model.Timestamp = DateTimeOffset.UtcNow;
             model.ETag = ETag.All;
 
-            // Save to Azure Table
             await _advertiserServices.CreateAdCreativeAsync(model);
 
-            // Set a success message in TempData
             TempData["SuccessMessage"] = "Ad Creative created successfully!";
-
-            // Redirect back to the Ads page
             return RedirectToAction("Ads", new { culture, channelId });
         }
+
+        [HttpPost]
+        [AutoValidateAntiforgeryToken]
+        [Route("/{culture}/ad/organization/{channelId}/creatives/{creativeId}/edit")]
+        public async Task<IActionResult> EditAdCreative(string culture, string channelId, 
+            string creativeId,
+            AdCreativeModel model)
+        {
+
+            model.PartitionKey = channelId;
+            model.RowKey = creativeId;
+            model.Timestamp = DateTimeOffset.UtcNow;
+            model.ETag = ETag.All;
+
+            await _advertiserServices.CreateAdCreativeAsync(model);
+
+            TempData["SuccessMessage"] = "Ad Creative created successfully!";
+            return RedirectToAction("Ads", new { culture, channelId });
+        }
+
+
         /// <summary>
         /// See details of creative.
         /// </summary>

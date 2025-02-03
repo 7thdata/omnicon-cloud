@@ -13,13 +13,18 @@ namespace wppCms.Areas.Usr.Models
         public string WelcomeMessage { get; set; } = "Welcome to your CMS Dashboard!";
     }
 
+    public class UsrHomeEditViewModel : PageViewModel
+    {
+        public ChannelViewModel Channel { get; set; }
+    }
+
     public class UsrHomeChannelViewModel : PageViewModel
     {
         public ChannelModel Channel { get; set; } // Selected channel details
         public List<ArticleModel> Articles { get; set; } // List of articles under the channel
     }
 
-    public class UsrHomeChannelDetailsViewModel : PageViewModel
+    public class UsrHomeDetailsViewModel : PageViewModel
     {
 
         public ChannelViewModel Channel { get; set; }
@@ -28,6 +33,7 @@ namespace wppCms.Areas.Usr.Models
 
     public class UsrHomeArticleDetailsViewModel : PageViewModel
     {
+        public ChannelViewModel Channel { get; set; }
         public ArticleModel Article { get; set; }
         public int ViewCount { get; set; }
         public int LikeCount { get; set; }
@@ -45,7 +51,6 @@ namespace wppCms.Areas.Usr.Models
         public string FolderPath { get; set; } // Path for folders/categories
         public string? Tags { get; set; } // Tags for the article
         public string? CanonicalUrl { get; set; } // Optional canonical URL for SEO
-        public string Culture { get; set; } // Culture or language of the article
 
         public DateTimeOffset PublishSince { get; set; } // When the article should be published
         public DateTimeOffset? PublishUntil { get; set; } // Optional: When the article should be unpublished
