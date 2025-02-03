@@ -37,6 +37,14 @@ namespace clsCms.Services
      bool isPublishDateSensitive = true);
 
         /// <summary>
+        /// Record search query.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        Task RecordSearchKeywordAsync(string channelId, string keyword);
+
+        /// <summary>
         /// Get list of search history.
         /// </summary>
         /// <param name="channelId"></param>
@@ -57,23 +65,45 @@ namespace clsCms.Services
         Task<ArticleModel> GetArticleAsync(string articleId);
 
         /// <summary>
-        /// Get article view.
+        /// Retrieves a detailed view of an article, including its content, author information, and associated channel details.
         /// </summary>
-        /// <param name="articleId"></param>
-        /// <param name="channelId"></param>
-        /// <returns></returns>
-        Task<ArticleViewModel> GetArticleViewAsync(string channelId, string articleId);
+        /// <param name="channelId">The ID of the channel where the article resides.</param>
+        /// <param name="articleId">The unique identifier of the article to retrieve.</param>
+        /// <param name="culture">The culture or language of the article to filter by.</param>
+        /// <returns>
+        /// An <see cref="ArticleViewModel"/> containing the article's details, author information, and associated channel metadata.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when the article with the specified <paramref name="articleId"/> and <paramref name="channelId"/> is not found.
+        /// </exception>
+        Task<ArticleViewModel> GetArticleViewAsync(string channelId, string articleId, string culture);
 
         /// <summary>
-        /// Get article view by perma name.
+        /// Retrieves a detailed view of an article by its permalink name, including its content, author information, 
+        /// and associated channel details.
         /// </summary>
-        /// <param name="channelId"></param>
-        /// <param name="permaName"></param>
-        /// <param name="isPubslishDateSensitive"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="channelId">The ID of the channel where the article resides.</param>
+        /// <param name="permaName">The permalink name of the article to retrieve.</param>
+        /// <param name="culture">The culture or language of the article to filter by.</param>
+        /// <param name="isPubslishDateSensitive">
+        /// Indicates whether the search should respect the article's publish date. 
+        /// Defaults to <c>true</c>, ensuring only currently published articles are retrieved.
+        /// </param>
+        /// <returns>
+        /// An <see cref="ArticleViewModel"/> containing the article's details, author information, and associated channel metadata, 
+        /// or <c>null</c> if no matching article is found.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when the article with the specified <paramref name="permaName"/> and <paramref name="channelId"/> is not found.
+        /// </exception>
+        /// <remarks>
+        /// This method queries the article table dynamically based on the provided permalink name, 
+        /// respecting the <paramref name="isPubslishDateSensitive"/> parameter to include or exclude unpublished articles.
+        /// It also fetches additional related data, such as the author and channel information, 
+        /// to populate the <see cref="ArticleViewModel"/>.
+        /// </remarks>
         Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId,
-            string permaName, bool isPubslishDateSensitive = true);
+            string permaName, string culture, bool isPubslishDateSensitive = true);
 
         Task UpdateArticleAsync(ArticleModel article);
         Task DeleteArticleAsync(string channelId, string rowKey);

@@ -51,6 +51,8 @@ namespace clsCms.Models
         public string? OrganizationId { get; set; }
     }
 
+  
+
     /// <summary>
     /// Represents an organization in the system.
     /// </summary>
@@ -97,11 +99,11 @@ namespace clsCms.Models
         [MaxLength(36)]
         public string OrganizationId { get; set; }
         [MaxLength(36)]
-        public string UserId { get; set; }  
-        [MaxLength(36)] 
+        public string UserId { get; set; }
+        [MaxLength(36)]
         public string Role { get; set; }
-        [MaxLength(36)] 
-        public string Status { get; set; }  
+        [MaxLength(36)]
+        public string Status { get; set; }
         public DateTimeOffset Created { get; set; }
         public DateTimeOffset Updated { get; set; }
         public DateTimeOffset? Joined { get; set; }
@@ -189,6 +191,18 @@ namespace clsCms.Models
         /// Gets or sets the date and time when the user's profile was created.
         /// </summary>
         public DateTimeOffset CreatedOn { get; set; }
+    }
+
+    /// <summary>
+    /// Login link.
+    /// </summary>
+    public class LoginLinkModel
+    {
+        [Key, MaxLength(36)]
+        public string LinkId { get; set; }
+        public DateTimeOffset Expire { get; set; }
+        [MaxLength(36)]
+        public string UserId { get; set; }
     }
 
 }

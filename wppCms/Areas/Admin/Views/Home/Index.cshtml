@@ -1,5 +1,9 @@
+@using wppCms.Areas.Admin.Models
+@model AdminHomeIndexViewModel
 @{
     ViewData["Title"] = "Admin Dashboard";
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
     Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
 }
 
@@ -14,14 +18,19 @@
     <div class="row mt-5">
         <div class="col-md-3 text-center">
             <a href="/admin/users" class="btn btn-primary btn-lg w-100">
-                <span class="material-icons">people</span>
+                <i class="fa-solid fa-users fa-fw"></i>
                 <div>Manage Users</div>
             </a>
         </div>
         <div class="col-md-3 text-center">
             <a href="/admin/articles" class="btn btn-primary btn-lg w-100">
-                <span class="material-icons">article</span>
+                <i class="fa-solid fa-newspaper fa-fw"></i>
                 <div>Manage Articles</div>
+            </a>
+
+            <a href="/@Model.Culture/admin/searches" class="btn btn-primary btn-lg w-100">
+                <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                <div>Manage Search</div>
             </a>
         </div>
         <div class="col-md-3 text-center">
@@ -32,14 +41,14 @@
         </div>
         <div class="col-md-3 text-center">
             <a href="/admin/settings" class="btn btn-primary btn-lg w-100">
-                <span class="material-icons">settings</span>
+                <i class="fa-solid fa-gear fa-fw"></i>
                 <div>Settings</div>
             </a>
         </div>
         <div class="row mt-5">
             <div class="col-md-3 text-center">
                 <a href="/admin/users/roles" class="btn btn-primary btn-lg w-100">
-                    <span class="material-icons">admin_panel_settings</span>
+                    <i class="fa-solid fa-tower-control fa-fw"></i>
                     <div>Manage Roles</div>
                 </a>
             </div>

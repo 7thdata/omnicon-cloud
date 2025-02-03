@@ -1,0 +1,82 @@
+@model wppCms.Areas.Admin.Models.AdminSearchIndexersViewModel
+
+@{
+    ViewData["Title"] = "Indexers";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2>Manage Indexers</h2>
+    <div class="d-flex">
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches">Indexes</a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/indexers">Indexers</a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/data-sources">Data Sources</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success mt-3">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model.Indexers.Any())
+    {
+        <table class="table table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>Indexer Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var indexerName in Model.Indexers)
+                {
+                    <tr>
+                        <td>@indexerName</td>
+                        <td>
+                            <form method="post" action="/@Model.Culture/admin/searches/start-indexer" class="d-inline">
+                                <input type="hidden" name="indexerName" value="@indexerName" />
+                                <button type="submit" class="btn btn-success btn-sm">Start</button>
+                            </form>
+                            <form method="post" action="/@Model.Culture/admin/searches/reset-indexer" class="d-inline">
+                                <input type="hidden" name="indexerName" value="@indexerName" />
+                                <button type="submit" class="btn btn-warning btn-sm">Reset</button>
+                            </form>
+                            <form method="post" action="/@Model.Culture/admin/searches/delete-indexer" class="d-inline">
+                                <input type="hidden" name="indexerName" value="@indexerName" />
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-warning mt-3">No indexers found.</div>
+    }
+
+    <form method="post" action="/@Model.Culture/admin/searches/create-indexer" class="mt-4">
+        <div class="mb-3">
+            <label for="dataSourceName">Data Source Name</label>
+            <input type="text" id="dataSourceName" name="dataSourceName" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="indexName">Index Name</label>
+            <input type="text" id="indexName" name="indexName" class="form-control" required />
+        </div>
+    
+        <button type="submit" class="btn btn-primary">Create Indexer</button>
+    </form>
+</div>

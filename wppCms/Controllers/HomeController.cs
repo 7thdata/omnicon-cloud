@@ -30,7 +30,8 @@ namespace wppCms.Controllers
             var view = new HomeIndexViewModel()
             {
                 Culture = culture,
-                GaTagId = _appConfig.Ga.TagId
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View(view);

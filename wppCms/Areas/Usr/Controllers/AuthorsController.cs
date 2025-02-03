@@ -1,68 +1,76 @@
 ﻿
 using clsCms.Interfaces;
 using clsCms.Models;
+using clsCms.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
 using System.Security.Policy;
+using System.Threading.Channels;
 using wppCms.Areas.Usr.Models;
 
 namespace wppCms.Areas.Usr.Controllers
 {
     [Area("Usr")]
     [Authorize]
-    public class AuthorsController : Controller
+    public class AuthorsController : UsrBaseController
     {
         private readonly IAuthorServices _authorServices;
-        private readonly UserManager<UserModel> _userManager;
-        private readonly IChannelServices _channelServices;
         private readonly AppConfigModel _appConfig;
 
-        public AuthorsController(IAuthorServices authorServices,
-            UserManager<UserModel> userManager, IChannelServices channelServices,
-            IOptions<AppConfigModel> appConfig)
+        public AuthorsController(UserManager<UserModel> userManager,
+        IChannelServices channelServices,IAuthorServices authorServices,
+            IOptions<AppConfigModel> appConfig) : base(userManager, channelServices)
         {
             _authorServices = authorServices;
-            _userManager = userManager;
-            _channelServices = channelServices;
             _appConfig = appConfig.Value;
         }
 
-        [Route("/{culture}/usr/authors")]
-        public async Task<IActionResult> Index(string culture)
+        /// <summary>
+        /// Show list of authors for the channel.
+        /// </summary>
+        /// <param name="culture"></param>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        [Route("/{culture}/usr/channel/{channelId}/authors")]
+        public async Task<IActionResult> Index(string culture, string channelId)
         {
-            var user = await _userManager.GetUserAsync(User);
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
-            if (string.IsNullOrEmpty(user.OrganizationId))
-            {
-                return RedirectToAction("Index", "Organization", new { culture = culture });
-            }
-
-            var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId, user.Id, false);
-
-            var channels = (await _channelServices.GetChannelsByUserIdAndOrganizationIdAsync(user.OrganizationId, user.Id, "", "", 1, 1000)).Items;
+            var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id, false);
 
             var view = new UsrAuthorsIndexViewModel()
             {
                 Authors = authors,
                 Culture = culture,
-                Channels = channels,
-                GaTagId = _appConfig.Ga.TagId
+                Channel = channel,
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View(view);
         }
 
-
+        /// <summary>
+        /// Show details of the author.
+        /// </summary>
+        /// <param name="culture"></param>
+        /// <param name="channelId"></param>
+        /// <param name="authorId"></param>
+        /// <returns></returns>
         [Route("/{culture}/usr/channel/{channelId}/author/{authorId}")]
 
         public async Task<IActionResult> Details(string culture, string channelId, string authorId)
         {
-            var channel = await _channelServices.GetChannelAsync(channelId);
-            var author = await _authorServices.GetAuthorAsync(channelId, authorId);
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
+            var author = await _authorServices.GetAuthorAsync(channelId, authorId);
             if (author == null)
             {
                 return NotFound();
@@ -72,30 +80,34 @@ namespace wppCms.Areas.Usr.Controllers
             {
                 Author = author,
                 Channel = channel,
-                Culture = culture
+                Culture = culture,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View(view);
         }
-
 
         // POST: Create a new author
         [HttpPost]
         [Route("/{culture}/usr/author/create")]
         public async Task<IActionResult> Create(string culture, AuthorModel author)
         {
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(author.ChannelId);
+
             author.SnsLinkJsonString = "";
             author.RowKey = Guid.NewGuid().ToString();
             author.PartitionKey = author.ChannelId;
 
-            var user = await _userManager.GetUserAsync(User);
-
             await _authorServices.CreateAuthorAsync(author);
 
-            return RedirectToAction("Index", new { culture = culture });
+            // Set success message
+            TempData["Message"] = $"Author '{author.Title}' has been successfully created.";
+
+            return RedirectToAction("Index", new { culture, @channelId = author.ChannelId });
 
         }
-
 
         // POST: Edit an existing author
         [HttpPost]
@@ -104,6 +116,10 @@ namespace wppCms.Areas.Usr.Controllers
             string title, string permaName, string profileImageUrl, string text,
             DateTime publishSince, DateTime publishUntil)
         {
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
+
             // Get original 
             var author = await _authorServices.GetAuthorAsync(channelId, authorId);
 
@@ -129,7 +145,7 @@ namespace wppCms.Areas.Usr.Controllers
 
             TempData["Message"] = "Author updated successfully";
 
-            return RedirectToAction("Details", new { culture = culture, authorId= authorId, channelId = channelId });
+            return RedirectToAction("Details", new { culture = culture, authorId = authorId, channelId = channelId });
         }
 
         // POST: Soft delete an author (set IsArchived to true)
@@ -137,13 +153,16 @@ namespace wppCms.Areas.Usr.Controllers
         [Route("/{culture}/usr/author/delete/{authorId}")]
         public async Task<IActionResult> Delete(string culture, string authorId)
         {
-            var user = await _userManager.GetUserAsync(User);
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
 
             var author = await _authorServices.GetAuthorAsync(user.Id, authorId);
             if (author == null)
             {
                 return NotFound();
             }
+
+            var channel = await GetChannelAsync(author.ChannelId);
 
             author.IsArchived = true;
 

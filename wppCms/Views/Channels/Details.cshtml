@@ -1,13 +1,17 @@
-﻿@using wppCms.Models
+﻿@using clsCms.Models
+@using wppCms.Models
+@using System.Text.Json;
 @model ChannelsDetailsViewModel
 @{
     Layout = null;
     var description = "";
 
-    if (string.IsNullOrEmpty(Model.Article.Article.Description)){
+    if (string.IsNullOrEmpty(Model.Article.Article.Description))
+    {
         description = Model.Channel.Channel.Description;
     }
-    else{
+    else
+    {
         description = Model.Article.Article.Description;
     }
 }
@@ -19,16 +23,16 @@
     <!-- Google Tag Manager -->
     @if (!string.IsNullOrEmpty(Model.GaTagId))
     {
-        <script>
-            (function (w, d, s, l, i) {
-                w[l] = w[l] || []; w[l].push({
-                    'gtm.start':
-                        new Date().getTime(), event: 'gtm.js'
-                }); var f = d.getElementsByTagName(s)[0],
-                    j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-            })(window, document, 'script', 'dataLayer', '@Model.GaTagId');</script>
-        <!-- End Google Tag Manager -->
+            <script>
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || []; w[l].push({
+                        'gtm.start':
+                            new Date().getTime(), event: 'gtm.js'
+                    }); var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                            'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+                })(window, document, 'script', 'dataLayer', '@Model.GaTagId');</script>
+            <!-- End Google Tag Manager -->
     }
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,7 +44,7 @@
     <!-- Keywords (if relevant) -->
     @if (!string.IsNullOrEmpty(Model.Article.Article.Tags))
     {
-        <meta name="keywords" content="@Model.Article.Article.Tags">
+            <meta name="keywords" content="@Model.Article.Article.Tags">
     }
 
     <!-- Open Graph Meta Tags for Social Media -->
@@ -49,7 +53,7 @@
     <meta property="og:type" content="website">
     @if (!string.IsNullOrEmpty(Model.Article.Article.MainImageUrl))
     {
-        <meta property="og:image" content="@Model.Article.Article.MainImageUrl">
+            <meta property="og:image" content="@Model.Article.Article.MainImageUrl">
     }
 
     <!-- Twitter Card Meta Tags -->
@@ -58,12 +62,15 @@
     <meta name="twitter:description" content="@description">
     @if (!string.IsNullOrEmpty(Model.Article.Article.MainImageUrl))
     {
-        <meta name="twitter:image" content="@Model.Article.Article.MainImageUrl">
+            <meta name="twitter:image" content="@Model.Article.Article.MainImageUrl">
     }
 
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://kit.fontawesome.com/29daede93b.js" crossorigin="anonymous"></script>
+    <!-- Font Awsome-->
+    @if (Model.FontAwsomeUrl != null)
+    {
+            <script src="@Model.FontAwsomeUrl" crossorigin="anonymous"></script>
+    }
     <link href="~/css/articles.css" rel="stylesheet" />
     @Html.Raw(Model.Channel.Channel.PublicCss)
 
@@ -77,16 +84,35 @@
     <div class="container-fluid">
         <div class="py-1">
             <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" class="text-decoration-none text-dark">Top</a>
-            / @Model.Article.Article.Folders
+            @Model.Article.Article.Folders
         </div>
         <div class="container">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+            }
 
+            @if (TempData["ErrorMessage"] != null)
+            {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+            }
             <div class="row">
                 <div class="col-md-8 my-2">
-
+                    <!-- Ad 1 -->
+                    <div id="ad-1">
+                        <div class="text-center py-3">
+                            <i class="fa fa-spinner fa-spin"></i> Loading ad...
+                        </div>
+                    </div>
                     @if (!string.IsNullOrEmpty(Model.Article.Article.MainImageUrl))
                     {
-                        <img src="@Model.Article.Article.MainImageUrl" class="card-img-top" />
+                            <img src="@Model.Article.Article.MainImageUrl" class="card-img-top" />
                     }
                     <div>
                         @Html.Raw(Model.Article.Article.Text)
@@ -102,80 +128,163 @@
                                 {
                                     var cleantag = tag.Trim();
 
-                                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@cleantag" class="badge bg-info text-decoration-none">@cleantag</a>
+                                                <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@cleantag" class="badge bg-info text-decoration-none">@cleantag</a>
                                 }
                             }
-
                         }
                     </div>
 
                     <div class="d-flex py-3">
-                        <div>
-                            Published: @Model.Article.Article.PublishSince.ToString("yyyy-MM-dd")
-                        </div>
-                    </div>
+                        <div class="d-flex flex-wrap">
+                            <div class="pe-3">
+                                Published: @Model.Article.Article.PublishSince?.ToString("yyyy-MM-dd")
+                            </div>
+                            <div class="d-flex ps-3">
 
-                    <div class="py-3">
-                        <h2>@Model.Article.Author.Title</h2>
-                        <!-- Author -->
-                        <div class="d-flex align-items-center">
-                            @if (!string.IsNullOrEmpty(Model.Article.Author.ProfileImageUrl))
-                            {
-                                <div class="profile-image-container-small pe-3">
-                                    <img src="@Model.Article.Author.ProfileImageUrl" alt="@Model.Article.Author.Title" />
+                                <div>
+                                    @if (!string.IsNullOrEmpty(Model.Article.Author.ProfileImageUrl))
+                                    {
+                                            <div class="profile-image-container-small pe-3">
+                                                <img src="@Model.Article.Author.ProfileImageUrl" alt="@Model.Article.Author.Title" />
+                                            </div>
+                                    }
                                 </div>
-                            }
-
-                            <div>
-                                @Html.Raw(Model.Article.Author.Text)
+                                <div class="m-auto">
+                                    @Model.Article.Author.Title : @Html.Raw(Model.Article.Author.Text)
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="py-3">
                         <h2>Share</h2>
-                        <div class="d-flex align-items-center">
-                            <!-- X (Twitter) Share -->
-                            <a href="https://x.com/intent/tweet?text=@Model.Article.Article.Title&url=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
-                               target="_blank" class="btn btn-outline-primary mx-1">
-                                <i class="fab fa-twitter"></i> Share on X
-                            </a>
-
-                            <!-- Facebook Share -->
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
-                               target="_blank" class="btn btn-outline-primary mx-1">
-                                <i class="fab fa-facebook"></i> Share on Facebook
-                            </a>
-
-                            <!-- LinkedIn Share -->
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
-                               target="_blank" class="btn btn-outline-primary mx-1">
-                                <i class="fab fa-linkedin"></i> Share on LinkedIn
-                            </a>
-
-                            <!-- WhatsApp Share -->
-                            <a href="https://wa.me/?text=@Model.Article.Article.Title&@Url.Action("Details", "Channels" , new { permaName=Model.Article.Article.PermaName, culture=Model.Culture }, Context.Request.Scheme)"
-                               target="_blank" class="btn btn-outline-success mx-1">
-                                <i class="fab fa-whatsapp"></i> Share on WhatsApp
-                            </a>
+                        <div class="row">
+                            <div class="col-6 col-md-3 my-1">
+                                <!-- X (Twitter) Share -->
+                                <a href="https://x.com/intent/tweet?text=@Model.Article.Article.Title&url=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
+                                   target="_blank" class="btn btn-outline-primary mx-1 w-100">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-3 my-1">
+                                <!-- Facebook Share -->
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
+                                   target="_blank" class="btn btn-outline-primary mx-1 w-100">
+                                    <i class="fab fa-facebook"></i>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-3 my-1">
+                                <!-- LinkedIn Share -->
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Url.Action("Details", "Channels", new { permaName = Model.Article.Article.PermaName, culture = Model.Culture }, Context.Request.Scheme)"
+                                   target="_blank" class="btn btn-outline-primary mx-1 w-100">
+                                    <i class="fab fa-linkedin"></i>
+                                </a>
+                            </div>
+                            <div class="col-6 col-md-3 my-1">
+                                <!-- WhatsApp Share -->
+                                <a href="https://wa.me/?text=@Model.Article.Article.Title&@Url.Action("Details", "Channels" , new { permaName=Model.Article.Article.PermaName, culture=Model.Culture }, Context.Request.Scheme)"
+                                   target="_blank" class="btn btn-outline-success mx-1 w-100">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Ad 2 -->
+
                     <div>
-                        <!-- Comments -->
-                        <h2>Comments</h2>
+                        <!-- Add Comment -->
+                        @if (Model.CurrentUser != null)
+                        {
+                                <form action="/@Model.Culture/c/@Model.Channel.Channel.Id/a/@Model.Article.Article.RowKey/comments" method="post">
+                                @Html.AntiForgeryToken()
+                                    <div class="mb-3">
+                                        <textarea name="commentText" class="form-control" rows="3" placeholder="Write your comment here..." required></textarea>
+                                    </div>
+                                    <div class="py-2 text-end">
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                        }
+                        else
+                        {
+                                <div class="alert alert-warning">Please log in to add a comment.</div>
+                        }
+
+                        <!-- Existing Comments -->
+                        @if (Model.Article.Article.CommentJsonString != null)
+                        {
+                            var comments = JsonSerializer.Deserialize<List<ArticleCommentModel>>(Model.Article.Article.CommentJsonString);
+                            foreach (var comment in comments)
+                            {
+                                        <div class="card my-2">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="@comment.CommentByIconUrl" alt="@comment.CommentByName" class="rounded-circle me-2" style="width: 40px; height: 40px;" />
+                                                    <strong>@comment.CommentByName</strong>
+                                                </div>
+
+                                                <p class="mt-2">@comment.CommentText</p>
+                                                <small class="text-muted">@comment.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+
+                                        @if (comment.CommentById == User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                                        {
+                                                        <form method="post" action="/@Model.Culture/c/@Model.Channel.Channel.Id/a/@Model.Article.Article.RowKey/comments/@comment.CommentId/delete" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                            <div class="text-end">
+                                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                                    <i class="fa-solid fa-trash fa-fw"></i>
+                                                                </button>
+                                                            </div>
+
+                                                        </form>
+                                        }
+                                            </div>
+                                        </div>
+                            }
+                        }
+                        else
+                        {
+                                <div class="alert alert-info">No comments yet. Be the first to comment!</div>
+                        }
+
                     </div>
 
                     <div>
-                        <!-- Related artic]
 
-                        les -->
                         <h2>Related Articles</h2>
+
+                        <div class="row" data-masonry='{"percentPosition": true }'>
+                            <!--Show list of articles here-->
+                            @foreach (var article in Model.RelatedArticles)
+                            {
+                                    <div class="col-md-6 my-2">
+                                        <div class="card my-2">
+                                        @if (!string.IsNullOrEmpty(article.MainImageUrl))
+                                        {
+                                                    <img src="@article.MainImageUrl" class="card-img-top" />
+                                        }
+                                            <div class="card-body">
+                                                <p>
+                                                @article.PublishSince?.ToString("yyyy-MM-dd")
+                                                </p>
+                                                <h5><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName/d/@article.PermaName" class="text-decoration-none text-secondary">@article.Title</a></h5>
+                                                <p>@article.Description</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                            }
+
+                            <!-- Ad 3 -->
+                        </div>
                     </div>
 
                 </div>
                 <div class="col-md-4 my-2">
 
+                    <!-- Ad 4 -->
                     <!--Show About Channel-->
                     <div class="card card-body my-2">
                         <h3><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" class="text-dark text-decoration-none">@Model.Channel.Channel.Title</a></h3>
@@ -187,39 +296,80 @@
 
                     <!--Show folders-->
                     <div class="card card-body my-2">
-                        <h3>Directories</h3>
+                        <h3>Filter by Directories</h3>
+
+                        @if (Model.Facets != null && Model.Facets.ContainsKey("Folders"))
+                        {
+                                <div>
+                                @foreach (var folder in Model.Facets["Folders"])
+                                {
+                                            <div class="py-1">
+                                                <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?folder=@folder.Value" class="btn btn-light btn-sm">
+                                                    <i class="fa-solid fa-folder"></i> @folder.Value
+                                                    <span class="badge bg-primary">@folder.Count</span>
+                                                </a>
+                                            </div>
+                                }
+                                </div>
+                        }
                     </div>
 
                     <!--Show Authors-->
                     <div class="card card-body my-2">
                         <h3>Authors</h3>
-                        <div class="row">
+                        @if (Model.Channel.Authors != null)
+                        {
+                                <div class="">
 
-                            @foreach (var author in Model.Channel.Authors)
-                            {
-                                <div class="col-md-6 my-2">
-                                    <div class="card">
-                                        <div class="profile-image-container">
+                                @foreach (var author in Model.Channel.Authors)
+                                {
+                                            <div class="d-flex my-2">
+                                                <div class="profile-image-container-small pe-2">
                                             @if (!string.IsNullOrEmpty(author.ProfileImageUrl))
                                             {
-                                                <img src="@author.ProfileImageUrl" class="card-img-top" alt="@author.Title" />
+                                                            <img src="@author.ProfileImageUrl" class="" alt="@author.Title" />
                                             }
-                                        </div>
-                                        <div class="card-body">
-                                            <h3 class="font-lg">
-                                                @author.Title
-                                            </h3>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
+                                                </div>
+                                                <div class="ps-2">
+                                                    <div class="font-md">
+                                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?author=@author.PermaName" class="text-decoration-none text-dark">
+                                                    @author.Title
+                                                        </a>
+                                                    </div>
+                                                    <div>
+                                                @author.Text
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                        </div>
+                                }
+
+                                </div>
+                        }
                     </div>
 
+                    <!-- Ad 5 -->
                     <!--Show tags-->
                     <div class="card card-body my-2">
                         <h3>Tags</h3>
+                        <div class="d-flex flex-wrap">
+                            @if (Model.Facets.TryGetValue("Tags", out var tagsFacet))
+                            {
+                                foreach (var tag in tagsFacet)
+                                {
+                                            <div class="my-1 p-1">
+                                                <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?tag=@tag.Value" class="btn btn-light btn-sm">
+                                            @tag.Value <span class="badge bg-primary">@tag.Count</span>
+                                                </a>
+
+                                            </div>
+                                }
+                            }
+                            else
+                            {
+                                    <div class="px-1">No tags available</div>
+                            }
+                        </div>
                     </div>
 
                     <!--Show popular search-->
@@ -227,29 +377,98 @@
                         <h3>Popular Search Terms</h3>
                         @if (Model.Channel.SearchQueryHistory.Count > 0)
                         {
-                            <div>
+                                <div class="d-flex flex-wrap">
                                 @foreach (var search in Model.Channel.SearchQueryHistory.OrderByDescending(s => s.Counter).Take(10))
                                 {
-                                    <div class="d-flex justify-content-between align-items-center py-2">
-                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@search.RowKey" class="flex-grow-1 text-decoration-none text-dark">
-                                            @search.RowKey
-                                        </a>
-                                        <span class="badge bg-primary">@search.Counter</span>
-
-                                    </div>
+                                            <div class="my-1 p-1">
+                                                <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@search.RowKey" class="btn btn-sm btn-light">
+                                            @search.RowKey  <span class="badge bg-primary">@search.Counter</span>
+                                                </a>
+                                            </div>
                                 }
-                            </div>
+                                </div>
                         }
                         else
                         {
-                            <div class="text-center">No search history.</div>
+                                <div class="text-center">No search history.</div>
                         }
                     </div>
 
+                    <!-- Ad 6 -->
                 </div>
             </div>
 
         </div>
     </div>
+    <script>
+        $(document).ready(function () {
+    const adContainer = $("#ad-1");
+    const channelId = "@Model.Channel.Channel.Id";
+    const culture = "@Model.Culture";
+
+    $.ajax({
+        url: `/${culture}/ad/${channelId}`,
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            adType: "banner", // Change based on your ad type logic
+            categoryExclude: "",
+            categoryInclude: "",
+            locationExclude: "",
+            locationInclude: "",
+            yourCurrentCountry: "", // Optional, based on user's location
+            yourCurrentRegion: ""  // Optional, based on user's location
+        }),
+        success: function (response) {
+            if (response && response.adCreative) {
+                const ad = response.adCreative;
+
+                // Render the ad based on its type
+                let adHtml = "";
+                if (ad.type === "text") {
+                    adHtml = `
+                        <div class="card my-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a href="${ad.redirectUrl}" class="text-decoration-none text-dark">
+                                            <h5>${ad.textTitle}</h5>
+                                            <p>${ad.textAdDescription}</p>
+                                        </a>
+                                    </div>
+                                    <div><i class="fa-solid fa-rectangle-ad fa-fw"></i></div>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if (ad.type === "image") {
+                    adHtml = `<div class="d-flex justify-content-between py-2">
+                        <div class="w-100">
+                            <a href="${ad.redirectUrl}" target="_blank">
+                                <img src="${ad.imageAdUrl}" alt="${ad.name}" class="img-fluid">
+                            </a>
+                        </div>
+                        <div><i class="fa-solid fa-rectangle-ad fa-fw"></i></div>
+                    </div>`;
+
+                    // Check if `imageTagUrl` exists and append it with width 1px
+                    if (ad.imageTagUrl) {
+                        adHtml += `
+                            <div>
+                                <img src="${ad.imageTagUrl}" alt="Tracking Pixel" style="width: 1px; height: auto;">
+                            </div>`;
+                    }
+                }
+
+                adContainer.html(adHtml);
+            } else {
+                adContainer.html("<p class='text-muted'>No ad available.</p>");
+            }
+        },
+        error: function () {
+            adContainer.html("<p class='text-danger'>Failed to load ad. Please try again later.</p>");
+        }
+    });
+});
+    </script>
 </body>
 </html>

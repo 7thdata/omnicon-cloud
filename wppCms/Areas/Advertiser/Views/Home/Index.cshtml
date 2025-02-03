@@ -3,12 +3,31 @@
 
 @{
     ViewData["Title"] = "Advertiser Dashboard";
-    Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
+    ViewData["GaTagId"] = Model.GaTagId;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
+    ViewData["Culture"] = Model.Culture;
     ViewData["ChannelId"] = Model.Channel.Channel.Id;
+
+    Layout = "~/Areas/Advertiser/Views/Shared/_Layout.cshtml";
+
 }
 
 <div class="container my-5">
-    <h1>Campaigns</h1>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Campaigns</h1>
+        </div>
+        <div>
+            <!-- Button to trigger modal -->
+
+            <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#createAdCampaignModal">
+                <i class="fa-solid fa-plus fa-fw"></i>
+            </button>
+
+        </div>
+    </div>
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success">
@@ -18,26 +37,29 @@
 
     <!-- Search Form -->
     <form method="get">
-        <div class="form-group">
-            <label for="keyword">Search Campaigns:</label>
-            <input type="text" id="keyword" name="keyword" class="form-control" value="@Model.Ads.Keyword" placeholder="Enter keyword...">
+        <div class="d-flex">
+            <div class="px-1">
+                <input type="text" id="keyword" name="keyword" class="form-control" value="@Model.Ads.Keyword" placeholder="Enter keyword...">
+            </div>
+            <div class="px-1">
+                <select id="sort" name="sort" class="form-control">
+                    <option value="">-- Sort By --</option>
+                    <option value="Name" @(Model.Ads.Sort == "Name" ? "selected" : "")>Name</option>
+                    <option value="StartDate" @(Model.Ads.Sort == "StartDate" ? "selected" : "")>Start Date</option>
+                    <option value="EndDate" @(Model.Ads.Sort == "EndDate" ? "selected" : "")>End Date</option>
+                </select>
+            </div>
+            <div class="px-1">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                </button>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="sort">Sort By:</label>
-            <select id="sort" name="sort" class="form-control">
-                <option value="">-- Select --</option>
-                <option value="Name" @(Model.Ads.Sort == "Name" ? "selected" : "")>Name</option>
-                <option value="StartDate" @(Model.Ads.Sort == "StartDate" ? "selected" : "")>Start Date</option>
-                <option value="EndDate" @(Model.Ads.Sort == "EndDate" ? "selected" : "")>End Date</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Search</button>
+
     </form>
 
-    <!-- Button to trigger modal -->
-    <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#createAdCampaignModal">
-        Create New Campaign
-    </button>
+
+
 
     <!-- Modal for creating a new campaign -->
     <div class="modal fade" id="createAdCampaignModal" tabindex="-1" aria-labelledby="createAdCampaignLabel" aria-hidden="true">

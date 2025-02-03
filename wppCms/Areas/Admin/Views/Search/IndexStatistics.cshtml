@@ -1,0 +1,40 @@
+@using wppCms.Areas.Admin.Models
+@model AdminSearchIndexStatisticsViewModel
+
+@{
+    ViewData["Title"] = "Index Statistics";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2>Index Statistics (@Model.IndexName)</h2>
+    <div class="d-flex">
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches">
+                Indexes
+            </a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/indexers">Indexer</a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/data-sources">Data Sources</a>
+        </div>
+    </div>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Details for Index: @Model.IndexName</h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Document Count:</dt>
+                <dd class="col-sm-9">@Model.DocumentCount</dd>
+
+                <dt class="col-sm-3">Storage Size (MB):</dt>
+                <dd class="col-sm-9">@Model.StorageSize.ToString("F2")</dd>
+            </dl>
+
+            <a href="/@Model.Culture/admin/searches" class="btn btn-secondary">Back to Index Management</a>
+        </div>
+    </div>
+</div>

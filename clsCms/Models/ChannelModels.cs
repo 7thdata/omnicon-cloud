@@ -51,7 +51,10 @@ namespace clsCms.Models
         public string? PublicCss { get; set; }
         [MaxLength(36)]
         public string OrganizationId { get; set; }
-
+        public bool IsTopPageStaticPage { get; set; } // Indicates if the top page is a static page.
+        public string? TopPagePermaName { get; set; } // Permalink for the top page.
+        public string? RootMediaFolder { get; set; }
+        public string? DefaultCulture { get; set; }
     }
 
     [Table("ChannelMemberships")]
@@ -85,6 +88,20 @@ namespace clsCms.Models
         public DateTimeOffset? Archived { get; set; } // Date when the membership was archived
     }
 
+    [Table("ChannelSubscribers")]
+    public class ChannelSubscriberModel
+    {
+        [Key, MaxLength(36)]
+        public string Id { get; set; }
+        [MaxLength(36)]
+        public string ChannelId { get; set; }
+        public string Email { get; set; }
+        public string Name { get; set; }
+    
+        public DateTimeOffset SubscriberSince { get; set; }
+        [MaxLength(36)]
+        public string SubscriberLevel { get; set; }
+    }
     // Record search history
     public class SearchQueryHistoryModel : ITableEntity
     {
@@ -96,17 +113,28 @@ namespace clsCms.Models
         public int Counter { get; set; }
     }
 
+    /// <summary>
+    /// View model for channel.
+    /// </summary>
     public class ChannelViewModel
     {
-        public ChannelViewModel(ChannelModel channel)
+        /// <summary>
+        /// Constructor of ChannelViewModel
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <param name="members"></param>
+        /// <param name="membership"></param>
+        public ChannelViewModel(ChannelModel channel, List<ChannelMembershipViewModel> members)
         {
             Channel = channel;
+            Members = members;
         }
 
-        public ChannelModel Channel { get; set; } // The channel details
-        public List<ChannelMembershipViewModel>? Members { get; set; }
-        public List<AuthorModel>? Authors { get; set; }
-        public List<SearchQueryHistoryModel> SearchQueryHistory { get; set; }    
+        public ChannelModel Channel { get; set; } // The channel details, set by default.
+        public List<ChannelMembershipViewModel> Members { get; set; } // List of members, set by default.
+        public ChannelMembershipViewModel? Membership { get; set; } // Your membership, set by default, could be null if it's for public.
+        public List<AuthorModel>? Authors { get; set; } // To append separately
+        public List<SearchQueryHistoryModel>? SearchQueryHistory { get; set; }  // To append separately  
     }
 
     public class ChannelMembershipViewModel

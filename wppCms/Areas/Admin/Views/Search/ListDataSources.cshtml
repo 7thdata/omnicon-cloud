@@ -1,0 +1,67 @@
+@model wppCms.Areas.Admin.Models.AdminSearchDataSourcesViewModel
+@{
+    ViewData["Title"] = "Data Sources";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2>Manage Data Sources</h2>
+    <div class="d-flex">
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches">
+                Indexes
+            </a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/indexers">Indexer</a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/data-sources">Data Sources</a>
+        </div>
+    </div>
+    @if (Model.DataSources.Any())
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Data Source Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var dataSource in Model.DataSources)
+                {
+                    <tr>
+                        <td>@dataSource</td>
+                        <td>
+                            <form method="post" action="/@Model.Culture/admin/searches/delete-data-source" class="d-inline">
+                                <input type="hidden" name="dataSourceName" value="@dataSource" />
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-warning">No data sources found.</div>
+    }
+
+    <form method="post" action="/@Model.Culture/admin/searches/create-data-source" class="mt-4">
+        <div class="mb-3">
+            <label for="dataSourceName">Data Source Name</label>
+            <input type="text" id="dataSourceName" name="dataSourceName" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="tableName">Table Name</label>
+            <input type="text" id="tableName" name="tableName" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="storageConnectionString">Storage Connection String</label>
+            <input type="text" id="storageConnectionString" name="storageConnectionString" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Create Data Source</button>
+    </form>
+</div>

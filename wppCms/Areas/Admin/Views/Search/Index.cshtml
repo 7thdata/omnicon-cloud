@@ -1,0 +1,57 @@
+@using wppCms.Areas.Admin.Models
+@model AdminSearchIndexViewModel
+
+@{
+    ViewData["Title"] = "Search";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2>Manage Search Indexes</h2>
+
+    <div class="d-flex">
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches">
+                Indexes
+            </a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/indexers">Indexer</a>
+        </div>
+        <div class="px-1">
+            <a href="/@Model.Culture/admin/searches/data-sources">Data Sources</a>
+        </div>
+    </div>
+    <hr />
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Index Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var indexName in Model.Indexes)
+            {
+                <tr>
+                    <td><a href="/@Model.Culture/admin/searches/statistics/@indexName">@indexName</a></td>
+                    <td>
+                        <form asp-action="DeleteIndex" method="post">
+                            <input type="hidden" name="indexName" value="@indexName" />
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <form method="post" action="/@Model.Culture/admin/searches/create-index" class="mt-3">
+        <div class="form-group">
+            <label for="indexName">Index Name:</label>
+            <input type="text" id="indexName" name="indexName" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Create Index</button>
+    </form>
+</div>

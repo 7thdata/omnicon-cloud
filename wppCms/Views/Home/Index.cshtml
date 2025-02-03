@@ -5,6 +5,7 @@
     var title = Localizer["Title"];
     ViewData["Title"] = title;
     ViewData["GaTagId"] = Model.GaTagId;
+    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
     ViewData["Culture"] = Model.Culture;
 }
 
@@ -40,7 +41,7 @@
                     {
                         <div class="px-2">
                             <a href="/en/usr" class="btn btn-secondary rounded-0">
-                                <span class="material-icons">dashboard</span> @Localizer["Dashboard"]
+                                <i class="fa-solid fa-grid fa-fw"></i> @Localizer["Dashboard"]
                             </a>
                         </div>
                     }
@@ -48,24 +49,23 @@
                     {
                         <div class="px-2">
                             <a href="/identity/account/register" class="btn btn-secondary rounded-0">
-                                <span class="material-icons">person_add</span> @Localizer["Register"]
+                                <i class="fa-solid fa-user-plus fa-fw"></i> @Localizer["Register"]
                             </a>
                         </div>
                         <div class="px-2">
                             <a href="/identity/account/login" class="btn btn-secondary rounded-0">
-                                <span class="material-icons">login</span> @Localizer["Login"]
+                                <i class="fa-solid fa-right-to-bracket fa-fw"></i> @Localizer["Login"]
                             </a>
                         </div>
                     }
                     <div class="px-2">
                         <a href="/en/c/omnicon-doc-en" class="btn btn-secondary rounded-0">
-                            <span class="material-icons">book</span> @Localizer["Docs"]
+                            <i class="fa-solid fa-file-doc fa-fw"></i> @Localizer["Docs"]
                         </a>
                     </div>
                 </div>
             </div>
             <div class="col-md-6 my-2">
-              
             </div>
         </div>
     </div>
@@ -73,27 +73,29 @@
 <div class="container py-4">
     <div class="row">
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">code</span> @Localizer["FeatureApiAccessTitle"]</h2>
+            <h2>
+                <i class="fa-solid fa-code fa-fw"></i> @Localizer["FeatureApiAccessTitle"]
+            </h2>
             <p>@Localizer["FeatureApiAccessDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">speed</span> @Localizer["FeaturePerformanceTitle"]</h2>
+            <h2><i class="fa-solid fa-bolt-lightning fa-fw"></i> @Localizer["FeaturePerformanceTitle"]</h2>
             <p>@Localizer["FeaturePerformanceDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">search</span> @Localizer["FeatureSearchTitle"]</h2>
+            <h2><i class="fa-solid fa-magnifying-glass fa-fw"></i> @Localizer["FeatureSearchTitle"]</h2>
             <p>@Localizer["FeatureSearchDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">storage</span> @Localizer["FeatureStorageTitle"]</h2>
+            <h2><i class="fa-solid fa-warehouse fa-fw"></i> @Localizer["FeatureStorageTitle"]</h2>
             <p>@Localizer["FeatureStorageDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">description</span> @Localizer["FeatureDeveloperCentricTitle"]</h2>
+            <h2><i class="fa-regular fa-laptop-code fa-fw"></i> @Localizer["FeatureDeveloperCentricTitle"]</h2>
             <p>@Localizer["FeatureDeveloperCentricDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><span class="material-icons">settings</span> @Localizer["FeatureScalableTitle"]</h2>
+            <h2><i class="fa-solid fa-sliders fa-fw"></i> @Localizer["FeatureScalableTitle"]</h2>
             <p>@Localizer["FeatureScalableDescription"]</p>
         </div>
     </div>

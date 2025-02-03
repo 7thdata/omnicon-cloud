@@ -215,13 +215,19 @@ namespace clsCms.Services
 
         public async Task<List<string>> GetAdCreativeIdsByAdGroupAsync(string channelId, string adGroupId)
         {
+            // Query only by PartitionKey (channelId) because Azure Table Storage requires this
             var query = _adGroupAdCreativeMappingTable.QueryAsync<AdGroupAdCreativeMappingModel>(
-                m => m.PartitionKey == channelId && m.AdGroupId == adGroupId);
+                m => m.PartitionKey == channelId);
 
             var adCreativeIds = new List<string>();
+
+            // Filter the results in memory for AdGroupId
             await foreach (var mapping in query)
             {
-                adCreativeIds.Add(mapping.AdCreativeId);
+                if (mapping.AdGroupId == adGroupId)
+                {
+                    adCreativeIds.Add(mapping.AdCreativeId);
+                }
             }
 
             return adCreativeIds;
@@ -231,30 +237,51 @@ namespace clsCms.Services
 
         #region AdCreative CRUD
 
-        public async Task<PaginationModel<AdCreativeModel>> GetAdCreativesAsync(
-    List<string> adCreativeIds,
-    string keyword,
-    string sort,
-    int currentPage,
-    int itemsPerPage)
+        public async Task<List<AdCreativeModel>> GetAdCreativesFromIdsAsync(
+            string channelId,
+     List<string> adCreativeIds,
+     string keyword,
+     string sort,
+     int maxItems = 1000)
         {
-            // Ensure the AdGroup table exists
+            // Ensure the AdCreative table exists
             await _adCreativeTable.CreateIfNotExistsAsync();
 
-            var query = _adCreativeTable.QueryAsync<AdCreativeModel>(
-                creative => adCreativeIds.Contains(creative.RowKey));
+            // Filter the ad creatives by RowKey (adCreativeIds)
+            var query = _adCreativeTable.QueryAsync<AdCreativeModel>(m=> m.PartitionKey == channelId);
+
+            var filteredResult = new List<AdCreativeModel>();
+
+            // Fetch and filter results and build the list
+            await foreach (var creative in query)
+            {
+                // Filter by keyword if provided
+                if (string.IsNullOrEmpty(keyword) || creative.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                {
+                    filteredResult.Add(creative);
+                }
+
+                // Stop collecting items if the limit is reached
+                if (filteredResult.Count >= maxItems)
+                {
+                    break;
+                }
+            }
 
             var result = new List<AdCreativeModel>();
 
-            await foreach (var creative in query)
+            // Get only the ad creatives that are in the list of IDs
+            foreach (var adId in adCreativeIds)
             {
-                if (string.IsNullOrEmpty(keyword) || creative.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                var creative = filteredResult.Find(c => c.RowKey == adId);
+
+                if (creative != null)
                 {
                     result.Add(creative);
                 }
             }
 
-            // Sorting logic
+            // Apply sorting
             switch (sort?.ToLower())
             {
                 case "name":
@@ -265,26 +292,14 @@ namespace clsCms.Services
                     break;
             }
 
-            // Pagination
-            var totalItems = result.Count;
-            var totalPages = (int)Math.Ceiling(totalItems / (double)itemsPerPage);
-
-            var paginatedItems = result
-                .Skip((currentPage - 1) * itemsPerPage)
-                .Take(itemsPerPage)
-                .ToList();
-
-            return new PaginationModel<AdCreativeModel>(paginatedItems, currentPage, itemsPerPage, totalItems, totalPages)
-            {
-                Keyword = keyword,
-                Sort = sort
-            };
+            // Return the limited, sorted list
+            return result;
         }
 
         public async Task CreateAdCreativeAsync(AdCreativeModel adCreative)
         {
             await _adCreativeTable.CreateIfNotExistsAsync();
-            await _adCreativeTable.AddEntityAsync(adCreative);
+            await _adCreativeTable.UpsertEntityAsync(adCreative);
         }
 
         public async Task<AdCreativeModel> GetAdCreativeAsync(string organizationId, string adCreativeId)
@@ -302,10 +317,10 @@ namespace clsCms.Services
             await _adCreativeTable.DeleteEntityAsync(organizationId, adCreativeId);
         }
 
-        public async Task<PaginationModel<AdCreativeModel>> GetAdCreativesAsync(
-    string channelId, string keyword, string sort, int currentPage, int itemsPerPage)
+        public async Task<List<AdCreativeModel>> GetAdCreativesAsync(
+     string channelId, string keyword, string sort, int maxItems = 1000)
         {
-            // Ensure the AdGroup table exists
+            // Ensure the AdCreative table exists
             await _adCreativeTable.CreateIfNotExistsAsync();
 
             // Query the ad creatives by PartitionKey (channel ID)
@@ -313,11 +328,19 @@ namespace clsCms.Services
 
             var result = new List<AdCreativeModel>();
 
+            // Fetch and filter results
             await foreach (var creative in query)
             {
+                // Filter by keyword if provided
                 if (string.IsNullOrEmpty(keyword) || creative.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 {
                     result.Add(creative);
+                }
+
+                // Stop collecting items if the limit is reached
+                if (result.Count >= maxItems)
+                {
+                    break;
                 }
             }
 
@@ -332,21 +355,97 @@ namespace clsCms.Services
                     break;
             }
 
-            // Pagination logic
-            var totalItems = result.Count;
-            var totalPages = (int)Math.Ceiling(totalItems / (double)itemsPerPage);
-
-            var paginatedItems = result
-                .Skip((currentPage - 1) * itemsPerPage)
-                .Take(itemsPerPage)
-                .ToList();
-
-            return new PaginationModel<AdCreativeModel>(paginatedItems, currentPage, itemsPerPage, totalItems, totalPages)
-            {
-                Keyword = keyword,
-                Sort = sort
-            };
+            // Return the limited, sorted list
+            return result;
         }
+
+        #endregion
+
+        #region serve ad
+
+        public async Task<AdServingModel> GetAnAdAsync(AdRequestModel request)
+        {
+            var result = new AdServingModel();
+
+            // Step 1: Fetch all campaigns for the channel (PartitionKey)
+            var campaigns = _adCampaignTable.QueryAsync<AdCampaignModel>(
+                c => c.PartitionKey == request.ChannelId &&
+                     c.Status == "Active" &&
+                     c.StartDate <= DateTimeOffset.UtcNow &&
+                     c.EndDate >= DateTimeOffset.UtcNow);
+
+            // Step 2: Select a random campaign from the active ones
+            var campaignList = await campaigns.ToListAsync();
+            if (!campaignList.Any()) return null; // No active campaigns
+
+            var randomCampaign = campaignList[new Random().Next(campaignList.Count)];
+            result.AdCampaign = randomCampaign;
+
+            // Step 3: Fetch all ad groups for the selected campaign
+            var adGroups = _adGroupTable.QueryAsync<AdGroupModel>(
+                g => g.PartitionKey == request.ChannelId &&
+                     g.AdCampaignId == randomCampaign.RowKey &&
+                     g.Status == "Active");
+
+            var adGroupList = await adGroups.ToListAsync();
+            if (!adGroupList.Any()) return null; // No active ad groups
+
+            // Step 4: Weighted random selection of an ad group based on Bid
+            var totalBid = adGroupList.Sum(g => g.Bid);
+            var randomValue = new Random().Next(0, totalBid);
+            int cumulativeBid = 0;
+            AdGroupModel selectedAdGroup = null;
+
+            foreach (var adGroup in adGroupList)
+            {
+                cumulativeBid += adGroup.Bid;
+                if (randomValue < cumulativeBid)
+                {
+                    selectedAdGroup = adGroup;
+                    break;
+                }
+            }
+
+            if (selectedAdGroup == null) return null; // No valid ad group found
+            result.AdGroup = selectedAdGroup;
+
+            // Step 5: Fetch all ad creative mappings for the selected ad group
+            var adMappings = _adGroupAdCreativeMappingTable.QueryAsync<AdGroupAdCreativeMappingModel>(
+                m => m.PartitionKey == request.ChannelId && m.AdGroupId == selectedAdGroup.RowKey);
+
+            var adMappingList = await adMappings.ToListAsync();
+            if (!adMappingList.Any()) return null; // No ads in the selected ad group
+
+            // Step 6: Fetch all ad creatives from the mappings
+            var adCreativeIds = adMappingList.Select(m => m.AdCreativeId).ToHashSet(); // Use HashSet for faster lookup
+
+            // Query all ad creatives for the channel
+            var query = _adCreativeTable.QueryAsync<AdCreativeModel>(c => c.PartitionKey == request.ChannelId);
+
+            var adCreatives = new List<AdCreativeModel>();
+
+            await foreach (var creative in query)
+            {
+                // Filter in memory
+                if (adCreativeIds.Contains(creative.RowKey))
+                {
+                    adCreatives.Add(creative);
+                }
+            }
+
+            if (!adCreatives.Any()) return null; // No matching ad creatives
+
+            // Step 7: Randomly select an ad creative
+            var selectedAdCreative = adCreatives[new Random().Next(adCreatives.Count)];
+            result.AdCreative = selectedAdCreative;
+
+            // Step 8: Add culture information (if applicable)
+            result.Culture = request.Culture;
+
+            return result;
+        }
+
+
         #endregion
     }
 }

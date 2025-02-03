@@ -33,7 +33,8 @@ namespace clsCMs.Data
                 entity.HasKey(e => new { e.Tick, e.OrganizationId, e.ChannelId, e.ArticleId });
             });
         }
-
+        // Users
+        public DbSet<LoginLinkModel> LoginLinks { get; set; }
         // Organizations
         public DbSet<OrganizationModel> Organizations { get; set; }
         public DbSet<OrganizationMemberModel> Memberships { get; set; }
@@ -41,6 +42,8 @@ namespace clsCMs.Data
         // Channels
         public DbSet<ChannelModel> Channels { get; set; }
         public DbSet<ChannelMembershipModel> ChannelMemberships { get; set; }
+
+        public DbSet<ChannelSubscriberModel> ChannelSubscribers { get; set; }   
 
         // Publisher Performance
         public DbSet<ArticleImpressionModel> ArticleImpressions { get; set; }

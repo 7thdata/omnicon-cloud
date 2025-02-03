@@ -27,16 +27,26 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-
-
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Yesteryear&display=swap" rel="stylesheet"> <!-- Font Awsome-->
+    @if (ViewData["FontAwsome"] != null)
+    {
+        <script src="@ViewData["FontAwsome"]" crossorigin="anonymous"></script>
+    }
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" type="text/css" href="/css/slick.css" />
     <link rel="stylesheet" type="text/css" href="/css/slick-theme.css" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/images/favicon/android-chrome-256x256.png">
+    <link rel="shortcut icon" href="/images/favicon/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png">
+
+    <link rel="manifest" href="/images/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
 
     @await RenderSectionAsync("Header", required: false)
 </head>
@@ -53,15 +63,15 @@
     <header>
         <nav class="navbar bg-body-tertiary fixed-top">
             <div class="container-fluid">
-                <a class="navbar-brand" href="/@ViewData["Culture"]"><span class="logo-sub">OmniCon</span></a>
+                <a class="navbar-brand" href="/@ViewData["Culture"]"><span class="logo-sub">OMNICON.cloud</span></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas"
                         data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-                    <span class="material-icons">menu</span>
+                    <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar"
                      aria-labelledby="offcanvasNavbarLabel">
                     <div class="offcanvas-header">
-                        <h5 class="offcanvas-title" id="offcanvasNavbarLabel"><span class="logo-sub">OmniCon</span></h5>
+                        <h5 class="offcanvas-title" id="offcanvasNavbarLabel"><span class="logo-sub">OMNICON.cloud</span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                     </div>
                     <div class="offcanvas-body">
@@ -71,7 +81,7 @@
                             {
                                 <li class="nav-item">
                                     <a class="nav-link" href="/en/usr">
-                                        <span class="material-icons">dashboard</span> Dashboard
+                                        <i class="fa-solid fa-grid fa-fw"></i> Channels
                                     </a>
                                 </li>
                             }
@@ -92,8 +102,13 @@
                         </ul>
 
                         <form action="/en/c/omnicon-doc-en" method="get" class="d-flex mt-3" role="search">
-                            <input class="form-control me-2" type="search" placeholder="Search" name="keyword" aria-label="Search">
-                            <button class="btn btn-outline-success" type="submit">Search</button>
+
+                            <div class="input-group">
+                                <input class="form-control" type="search" placeholder="Search" name="keyword" aria-label="Search">
+                                <button class="btn btn-outline-success" type="submit">
+                                    <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -106,7 +121,7 @@
     </main>
 
     <footer class="pt-4 text-center">
-        &copy; 2023 - @DateTime.Now.Year <span class="logo-sub">OmniCon</span> by SEVENTH DATA Inc.,
+        &copy; 2023 - @DateTime.Now.Year <span class="logo-sub">OMNICON.cloud</span> by SEVENTH DATA Inc.,
     </footer>
 
     <!-- jQuery -->

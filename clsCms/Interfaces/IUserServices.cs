@@ -53,5 +53,26 @@ namespace clsCms.Services
         /// <param name="member"></param>
         /// <returns></returns>
         Task<OrganizationMemberModel> UpsertOrganizationMemberAsync(OrganizationMemberModel member);
+
+        /// <summary>
+        /// Issue login link
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        Task<LoginLinkModel> IssueLoginLinkAsync(string userId);
+
+        /// <summary>
+        /// Consume login link
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="linkId"></param>
+        /// <returns></returns>
+        Task<bool> ConsumeLoginLinkAsync(string userId, string linkId);
+
+        /// <summary>
+        /// Clean expired login link
+        /// </summary>
+        /// <returns></returns>
+        Task CleanExpiredLoginLinkAsync();
     }
 }

@@ -39,14 +39,16 @@ namespace clsCms.Interfaces
         Task<AdCreativeModel> GetAdCreativeAsync(string organizationId, string adCreativeId);
         Task UpdateAdCreativeAsync(AdCreativeModel adCreative);
         Task DeleteAdCreativeAsync(string organizationId, string adCreativeId);
-        Task<PaginationModel<AdCreativeModel>> GetAdCreativesAsync(
-    List<string> adCreativeIds,
-    string keyword,
-    string sort,
-    int currentPage,
-    int itemsPerPage);
+        Task<List<AdCreativeModel>> GetAdCreativesFromIdsAsync(
+            string channelId,
+     List<string> adCreativeIds,
+     string keyword,
+     string sort,
+     int maxItems = 1000);
 
-        Task<PaginationModel<AdCreativeModel>> GetAdCreativesAsync(
-    string channelId, string keyword, string sort, int currentPage, int itemsPerPage);
+        Task<List<AdCreativeModel>> GetAdCreativesAsync(
+     string channelId, string keyword, string sort, int maxItems = 1000);
+
+        Task<AdServingModel> GetAnAdAsync(AdRequestModel request);
     }
 }

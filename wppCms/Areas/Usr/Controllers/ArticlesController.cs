@@ -1,10 +1,12 @@
-﻿using clsCms.Interfaces;
+﻿
+using clsCms.Interfaces;
 using clsCms.Models;
 using clsCms.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System;
 using System.Threading.Channels;
 using wppCms.Areas.Usr.Models;
 
@@ -12,26 +14,27 @@ namespace wppCms.Areas.Usr.Controllers
 {
     [Area("Usr")]
     [Authorize]
-    public class ArticlesController : Controller
+    public class ArticlesController : UsrBaseController
     {
         private readonly IArticleServices _articleServices;
+        private readonly ISearchServices _searchServices;
         private readonly IAuthorServices _authorServices;
-        private readonly UserManager<UserModel> _userManager;
         private readonly IBlobStorageServices _blobStorageServices;
         private readonly ILogger<ArticlesController> _logger;
         private readonly AppConfigModel _appConfig;
 
-        public ArticlesController(IArticleServices articleServices,
+        public ArticlesController(IArticleServices articleServices, ISearchServices searchServices,
             IAuthorServices authorServices, UserManager<UserModel> userManager,
+            IChannelServices channelServices,
             IBlobStorageServices blobStorageServices, ILogger<ArticlesController> logger,
-            IOptions<AppConfigModel> appConfig)
+            IOptions<AppConfigModel> appConfig) : base(userManager, channelServices)
         {
             _articleServices = articleServices;
             _authorServices = authorServices;
-            _userManager = userManager;
             _blobStorageServices = blobStorageServices;
             _logger = logger;
             _appConfig = appConfig.Value;
+            _searchServices = searchServices;
         }
 
         [Route("/{culture}/usr/channel/{channelId}/_articles")]
@@ -59,7 +62,9 @@ namespace wppCms.Areas.Usr.Controllers
         [Route("/{culture}/usr/channel/{channelId}/article/create")]
         public async Task<IActionResult> Create(string culture, string channelId)
         {
-            var user = await _userManager.GetUserAsync(User);
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
             var authors = await _authorServices.ListAuthorsByChannelAsync(channelId);
 
@@ -72,15 +77,21 @@ namespace wppCms.Areas.Usr.Controllers
 
             var viewModel = new UsrArticlesCreateEditViewModel
             {
-                ChannelId = channelId,
                 Culture = culture,
-                ArticleCulture = culture,
+                ArticleCulture = channel.Channel.DefaultCulture ?? "",
                 RowKey = Guid.NewGuid().ToString(),
                 PublishSince = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm"),  // Properly formatted for datetime-local
                 PublishUntil = DateTimeOffset.MaxValue.ToString("yyyy-MM-ddTHH:mm"),  // Properly formatted for datetime-local
                 Authors = authors, // Pass the list of authors
                 IsEditMode = false,
-
+                ShowAuthor = true,
+                IsArchived = false,
+                IsArticle = true,
+                IsSearchable = true,
+                PermaName = Guid.NewGuid().ToString(),
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                Channel = channel
             };
 
             return View("ArticleForm", viewModel); // Use the same view
@@ -88,57 +99,60 @@ namespace wppCms.Areas.Usr.Controllers
 
         [HttpPost]
         [Route("/{culture}/usr/channel/{channelId}/article/save")]
-        public async Task<IActionResult> SaveArticle(UsrArticlesCreateEditViewModel model, string culture, string channelId)
+        public async Task<IActionResult> SaveArticle(UsrArticlesCreateEditViewModel model,
+            string culture, string channelId)
         {
-            var user = await _userManager.GetUserAsync(User);
+            // Get the current user and channel.
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
 
-            if (!ModelState.IsValid)
+            var author = new AuthorModel();
+
+            if (!string.IsNullOrEmpty(model.AuthorId))
             {
-                // Loop through each error in ModelState to add custom messages for each
-                foreach (var key in ModelState.Keys.ToList())
+                author = await _authorServices.GetAuthorAsync(channel.Channel.Id, model.AuthorId);
+            }
+
+            DateTimeOffset? publishSince = null;
+            DateTimeOffset? publishUntil = null;
+
+            var version = 0;
+            var articleId = ""; // Use for unindexing
+
+            if (model.IsArticle)
+            {
+                if (!DateTimeOffset.TryParse(model.PublishSince, out var parsedSince))
                 {
-                    foreach (var error in ModelState[key].Errors.ToList())
-                    {
-                        ModelState.AddModelError(key, error.ErrorMessage);
-                    }
+                    ModelState.AddModelError("PublishSince", "Invalid format for Publish Since.");
+                    return View("ArticleForm", model);
                 }
 
-                var authors = await _authorServices.ListAuthorsByUserIdAndOrganizationIdAsync(user.OrganizationId, _userManager.GetUserId(User), false);
-                model.Authors = authors;
+                publishSince = parsedSince;
 
-                return View("ArticleForm", model); // Return view with validation errors
-            }
+                if (!string.IsNullOrEmpty(model.PublishUntil))
+                {
+                    if (!DateTimeOffset.TryParse(model.PublishUntil, out var parsedUntil))
+                    {
+                        ModelState.AddModelError("PublishUntil", "Invalid format for Publish Until.");
+                        return View("ArticleForm", model);
+                    }
 
-            // Ensure that PublishSince and PublishUntil are parsed to DateTimeOffset
-            if (!DateTimeOffset.TryParse(model.PublishSince, out DateTimeOffset publishSince))
-            {
-                ModelState.AddModelError("PublishSince", "Invalid date and time format for Publish Since.");
-                return View("ArticleForm", model);
-            }
-
-            DateTimeOffset? publishUntil = null;
-            if (!string.IsNullOrEmpty(model.PublishUntil) && !DateTimeOffset.TryParse(model.PublishUntil, out DateTimeOffset parsedPublishUntil))
-            {
-                ModelState.AddModelError("PublishUntil", "Invalid date and time format for Publish Until.");
-                return View("ArticleForm", model);
-            }
-            else if (!string.IsNullOrEmpty(model.PublishUntil))
-            {
-                publishUntil = DateTimeOffset.Parse(model.PublishUntil);
+                    publishUntil = parsedUntil; // Only set if parsing succeeds
+                }
             }
 
             if (model.IsEditMode)
             {
-                // Edit logic
                 var article = await _articleServices.GetArticleByChannelIdAndIdAsync(channelId, model.RowKey);
-                if (article == null)
-                {
-                    return NotFound();
-                }
+                if (article == null) return NotFound();
+
+                articleId = article.RowKey;
+                version = article.Version + 1;
 
                 // Update article fields
                 article.Title = model.Title;
                 article.Text = model.Text;
+                article.Folders = model.Folders;
                 article.Description = model.Description ?? "";
                 article.MainImageUrl = model.MainImageUrl;
                 article.PermaName = model.PermaName;
@@ -146,18 +160,20 @@ namespace wppCms.Areas.Usr.Controllers
                 article.CanonicalUrl = model.CanonicalUrl;
                 article.PublishSince = publishSince;
                 article.PublishUntil = publishUntil;
-                article.Folders = model.Folders;
-                article.AuthorId = model.AuthorId;
-
+                article.IsArchived = model.IsArchived;
+                article.IsArticle = model.IsArticle; // Include IsArticle
+                article.ShowAuthor = model.ShowAuthor; // Include ShowAuthor
+                article.AuthorId = model.ShowAuthor ? model.AuthorId : null; // Conditional based on ShowAuthor
+                article.UpdatedAt = DateTimeOffset.UtcNow;
                 article.Culture = model.ArticleCulture;
-
+                article.Version = version;
+                article.IsSearchable = model.IsSearchable;
                 await _articleServices.UpdateArticleAsync(article);
             }
             else
             {
-                model.RowKey = Guid.NewGuid().ToString(); // Create a new RowKey
+                model.RowKey = Guid.NewGuid().ToString();
 
-                // Create logic
                 var article = new ArticleModel
                 {
                     PartitionKey = channelId,
@@ -172,21 +188,76 @@ namespace wppCms.Areas.Usr.Controllers
                     CanonicalUrl = model.CanonicalUrl,
                     PublishSince = publishSince,
                     PublishUntil = publishUntil,
-                    AuthorId = model.AuthorId, // Assume the current user is the author
+                    IsArchived = model.IsArchived,
+                    IsArticle = model.IsArticle, // Include IsArticle
+                    ShowAuthor = model.ShowAuthor, // Include ShowAuthor
+                    AuthorId = model.ShowAuthor ? model.AuthorId : null, // Conditional based on ShowAuthor
                     Folders = model.Folders,
-                    Culture = model.ArticleCulture
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                    Version = version,
+                    Culture = model.ArticleCulture,
+                    IsSearchable = model.IsSearchable
                 };
 
                 await _articleServices.CreateArticleAsync(article);
             }
 
-            return RedirectToAction("Details", new { @culture = culture, @channelId = channelId, @id = model.RowKey });
+            // Index it.
+            if (model.IsSearchable)
+            {
+                var tags = new List<string>();
+                if(!string.IsNullOrEmpty(model.Tags))
+                {
+                    tags = model.Tags.Split(",").ToList();
+                }
+
+                await _searchServices.IndexArticlesAsync(new List<ArticleSearchModel>()
+                {
+                    new ArticleSearchModel()
+                    {
+                        ShowAuthor = model.ShowAuthor,
+                        PublishSince = publishSince,
+                        AuthorName = author?.PermaName,
+                        CanonicalUrl = model.CanonicalUrl,
+                        Culture = model.ArticleCulture,
+                        Description = model.Description,
+                        Folders = model.Folders,
+                        IsArchived = model.IsArchived,
+                        IsArticle = model.IsArticle,
+                        MainImageUrl = model.MainImageUrl,
+                        PartitionKey = channel.Channel.Id,
+                        PermaName = model.PermaName,
+                        PublishUntil = publishUntil,
+                        RowKey = model.RowKey,
+                        Tags = tags,
+                        Text = model.Text,
+                        Title = model.Title,
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                        Version = version
+                    }
+                });
+            }
+            else
+            {
+                if (model.IsEditMode)
+                {
+                    await _searchServices.UnIndexArticlesAsync(new List<string>() {
+                    articleId
+                    });
+                }
+
+                /// And if it's new we do nothing since document is not indexed yet.
+            }
+
+            return RedirectToAction("Details", new { culture, channelId, id = model.RowKey });
         }
 
         [Route("/{culture}/usr/channel/{channelId}/article/edit/{id}")]
         public async Task<IActionResult> Edit(string culture, string channelId, string id)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
+
             var article = await _articleServices.GetArticleByChannelIdAndIdAsync(channelId, id);
 
             if (article == null)
@@ -198,7 +269,7 @@ namespace wppCms.Areas.Usr.Controllers
 
             var viewModel = new UsrArticlesCreateEditViewModel
             {
-                ChannelId = channelId,
+                Channel = channel,
                 Culture = culture,
                 RowKey = id,
                 Title = article.Title,
@@ -206,7 +277,7 @@ namespace wppCms.Areas.Usr.Controllers
                 PermaName = article.PermaName,
                 Tags = article.Tags,
                 CanonicalUrl = article.CanonicalUrl,
-                PublishSince = article.PublishSince.ToString("yyyy-MM-ddTHH:mm"),
+                PublishSince = article.PublishSince?.ToString("yyyy-MM-ddTHH:mm"),
                 PublishUntil = article.PublishUntil?.ToString("yyyy-MM-ddTHH:mm"),
                 Folders = article.Folders,
                 Authors = authors, // Pass the list of authors
@@ -215,7 +286,9 @@ namespace wppCms.Areas.Usr.Controllers
                 ArticleCulture = article.Culture,
                 Description = article.Description,
                 MainImageUrl = article.MainImageUrl,
-                GaTagId = _appConfig.Ga.TagId
+                IsSearchable = article.IsSearchable,
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View("ArticleForm", viewModel); // Use the same view
@@ -224,7 +297,9 @@ namespace wppCms.Areas.Usr.Controllers
         [Route("/{culture}/usr/channel/{channelId}/article/details/{id}")]
         public async Task<IActionResult> Details(string culture, string channelId, string id)
         {
-            var userId = _userManager.GetUserId(User);
+            var user = await GetAuthenticatedUserAsync();
+            var channel = await GetChannelAsync(channelId);
+
             var article = await _articleServices.GetArticleByChannelIdAndIdAsync(channelId, id);
 
             if (article == null)
@@ -235,12 +310,14 @@ namespace wppCms.Areas.Usr.Controllers
             // Create and populate the new UsrHomeArticleDetailsViewModel
             var viewModel = new UsrHomeArticleDetailsViewModel
             {
+                Channel = channel,
                 Article = article,
                 ViewCount = 0,
                 LikeCount = 0,
                 CommentCount = 0,
                 Culture = culture,
-                GaTagId = _appConfig.Ga.TagId
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
             };
 
             return View("Details", viewModel); // Use the new Details.cshtml view
@@ -260,22 +337,19 @@ namespace wppCms.Areas.Usr.Controllers
                 return NotFound();
             }
 
-            // Check if the user deleting the article is the author or has permission
-            if (article.AuthorId != userId)
-            {
-                return Forbid(); // Return a 403 Forbidden if the user is not authorized
-            }
-
             // Delete the article
             await _articleServices.DeleteArticleAsync(channelId, rowKey);
 
+            // Set a success message in TempData
+            TempData["SuccessMessage"] = "The article has been successfully deleted.";
+
             // Redirect back to the channel's article list or a confirmation page
-            return RedirectToAction("Channel", new { culture = culture, channelId = channelId });
+            return RedirectToAction("Channel","Home", new { culture = culture, channelId = channelId });
         }
 
         [HttpPost]
         [Route("/{culture}/usr/channel/{channelId}/article/upload-assets")]
-        public async Task<IActionResult> UploadImages(List<IFormFile> files)
+        public async Task<IActionResult> UploadImages(string culture, string channelId, List<IFormFile> files)
         {
             // Validate the files collection
             if (files == null || files.Count == 0)
@@ -323,7 +397,7 @@ namespace wppCms.Areas.Usr.Controllers
                     }
 
                     // Upload file to blob storage and generate URLs
-                    var (originalUrl, thumbnailUrl) = await _blobStorageServices.UploadImageWithThumbnailAsync(stream, fileName, file.ContentType);
+                    var (originalUrl, thumbnailUrl) = await _blobStorageServices.UploadImageWithThumbnailAsync(channelId, stream, fileName, file.ContentType);
 
                     if (string.IsNullOrWhiteSpace(originalUrl) || string.IsNullOrWhiteSpace(thumbnailUrl))
                     {
@@ -349,6 +423,63 @@ namespace wppCms.Areas.Usr.Controllers
             }
 
             return Ok(uploadResults);
+        }
+
+        [HttpPost]
+        [Route("/{culture}/usr/channel/{channelId}/article/upload-image")]
+        public async Task<IActionResult> UploadImage(string culture, string channelId, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                _logger.LogWarning("No file uploaded.");
+                return BadRequest(new { message = "No file uploaded." });
+            }
+
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB limit
+            var allowedContentTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+
+            if (file.Length > maxFileSize)
+            {
+                _logger.LogWarning("File {FileName} exceeds size limit.", file.FileName);
+                return BadRequest(new { message = $"File size exceeds the 5MB limit." });
+            }
+
+            if (!allowedContentTypes.Contains(file.ContentType))
+            {
+                _logger.LogWarning("Unsupported content type for file: {FileName}", file.FileName);
+                return BadRequest(new { message = $"Unsupported file type." });
+            }
+
+            var fileName = Path.GetFileName(file.FileName);
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+
+                // Optional: Validate the file's MIME type using its content
+                if (!IsValidImageFile(stream))
+                {
+                    _logger.LogWarning("Invalid image content for file: {FileName}", fileName);
+                    return BadRequest(new { message = "Invalid image file." });
+                }
+
+                // Upload file to blob storage and generate URL
+                var (originalUrl, _) = await _blobStorageServices.UploadImageWithThumbnailAsync(channelId, stream, fileName, file.ContentType);
+
+                if (string.IsNullOrWhiteSpace(originalUrl))
+                {
+                    _logger.LogError("Generated URL is null or empty for file: {FileName}", fileName);
+                    return StatusCode(500, new { message = "Failed to upload image." });
+                }
+
+                _logger.LogInformation("File {FileName} uploaded successfully.", fileName);
+                return Ok(new { location = originalUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while uploading file: {FileName}", fileName);
+                return StatusCode(500, new { message = "An error occurred while uploading the image." });
+            }
         }
 
         // Helper method to validate image file content

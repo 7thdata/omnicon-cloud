@@ -108,7 +108,6 @@ namespace clsCms.Services
             return articles;
         }
 
-
         /// <summary>
         /// Search for article.
         /// </summary>
@@ -231,7 +230,7 @@ namespace clsCms.Services
         /// <param name="channelId"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>
-        private async Task RecordSearchKeywordAsync(string channelId, string keyword)
+        public async Task RecordSearchKeywordAsync(string channelId, string keyword)
         {
             // Use Keyword as RowKey and Channel Id as PartitionKey
             string rowKey = keyword;
@@ -284,14 +283,19 @@ namespace clsCms.Services
                 {
                     results.Add(entity);
                 }
+
+                // Sort the results by a specific property, e.g., Timestamp or some other field
+                var sortedResults = results.OrderByDescending(r => r.Counter).ToList();
+
+                // Take the top X records
+                return sortedResults.Take(30).ToList();
             }
             catch (RequestFailedException ex)
             {
                 // Handle exceptions (e.g., log or rethrow)
                 Console.WriteLine($"Failed to retrieve search history: {ex.Message}");
+                return new List<SearchQueryHistoryModel>(); // Return an empty list in case of failure
             }
-
-            return results;
         }
 
 
@@ -341,16 +345,22 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Get article view.
+        /// Retrieves a detailed view of an article, including its content, author information, and associated channel details.
         /// </summary>
-        /// <param name="articleId"></param>
-        /// <param name="channelId"></param>
-        /// <returns></returns>
-        public async Task<ArticleViewModel> GetArticleViewAsync(string channelId, string articleId)
+        /// <param name="channelId">The ID of the channel where the article resides.</param>
+        /// <param name="articleId">The unique identifier of the article to retrieve.</param>
+        /// <param name="culture">The culture or language of the article to filter by.</param>
+        /// <returns>
+        /// An <see cref="ArticleViewModel"/> containing the article's details, author information, and associated channel metadata.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when the article with the specified <paramref name="articleId"/> and <paramref name="channelId"/> is not found.
+        /// </exception>
+        public async Task<ArticleViewModel> GetArticleViewAsync(string channelId, string articleId, string culture)
         {
             // Query the table for the specific article by PartitionKey (userId) and RowKey (articleId)
             var query = _articleTable.QueryAsync<ArticleModel>(
-                a => a.PartitionKey == channelId && a.RowKey == articleId);
+                a => a.PartitionKey == channelId && a.RowKey == articleId  && a.Culture == culture);
 
             // Retrieve the first matching article
             ArticleModel article = null;
@@ -381,15 +391,31 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Get article view by perma name.
+        /// Retrieves a detailed view of an article by its permalink name, including its content, author information, 
+        /// and associated channel details.
         /// </summary>
-        /// <param name="channelId"></param>
-        /// <param name="permaName"></param>
-        /// <param name="isPubslishDateSensitive"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="channelId">The ID of the channel where the article resides.</param>
+        /// <param name="permaName">The permalink name of the article to retrieve.</param>
+        /// <param name="culture">The culture or language of the article to filter by.</param>
+        /// <param name="isPubslishDateSensitive">
+        /// Indicates whether the search should respect the article's publish date. 
+        /// Defaults to <c>true</c>, ensuring only currently published articles are retrieved.
+        /// </param>
+        /// <returns>
+        /// An <see cref="ArticleViewModel"/> containing the article's details, author information, and associated channel metadata, 
+        /// or <c>null</c> if no matching article is found.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when the article with the specified <paramref name="permaName"/> and <paramref name="channelId"/> is not found.
+        /// </exception>
+        /// <remarks>
+        /// This method queries the article table dynamically based on the provided permalink name, 
+        /// respecting the <paramref name="isPubslishDateSensitive"/> parameter to include or exclude unpublished articles.
+        /// It also fetches additional related data, such as the author and channel information, 
+        /// to populate the <see cref="ArticleViewModel"/>.
+        /// </remarks>
         public async Task<ArticleViewModel?> GetArticleViewByPermaNameAsync(string channelId,
-            string permaName, bool isPubslishDateSensitive = true)
+            string permaName, string culture, bool isPubslishDateSensitive = true)
         {
             // Query the table for the specific article by PartitionKey (userId) and RowKey (articleId)
             AsyncPageable<ArticleModel> query;
@@ -397,12 +423,12 @@ namespace clsCms.Services
             if (isPubslishDateSensitive)
             {
                 query = _articleTable.QueryAsync<ArticleModel>(
-                a => a.PartitionKey == channelId && a.PermaName == permaName && !a.IsArchived && a.PublishSince < DateTimeOffset.Now);
+                a => a.PartitionKey == channelId && a.PermaName == permaName && a.Culture == culture && !a.IsArchived && a.PublishSince < DateTimeOffset.Now);
             }
             else
             {
                 query = _articleTable.QueryAsync<ArticleModel>(
-                a => a.PartitionKey == channelId && !a.IsArchived && a.PermaName == permaName);
+                a => a.PartitionKey == channelId && !a.IsArchived && a.Culture == culture && a.PermaName == permaName);
             }
 
 
@@ -451,6 +477,7 @@ namespace clsCms.Services
         public async Task UpdateArticleAsync(ArticleModel article)
         {
             article.Timestamp = DateTime.UtcNow;
+            
             await _articleTable.UpdateEntityAsync(article, article.ETag, TableUpdateMode.Replace);
         }
 

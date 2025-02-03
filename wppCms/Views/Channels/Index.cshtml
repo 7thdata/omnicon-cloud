@@ -13,12 +13,12 @@
     {
         <script>
             (function (w, d, s, l, i) {
-                w[l] = w[l] || []; w[l].push({
-                    'gtm.start':
-                        new Date().getTime(), event: 'gtm.js'
-                }); var f = d.getElementsByTagName(s)[0],
-                    j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+            w[l] = w[l] || []; w[l].push({
+            'gtm.start':
+            new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+            'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
             })(window, document, 'script', 'dataLayer', '@Model.GaTagId');</script>
         <!-- End Google Tag Manager -->
     }
@@ -26,10 +26,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@Model.Channel.Channel.Title</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://kit.fontawesome.com/29daede93b.js" crossorigin="anonymous"></script>
+    <!-- Font Awsome-->
+    @if (Model.FontAwsomeUrl != null)
+    {
+        <script src="@Model.FontAwsomeUrl" crossorigin="anonymous"></script>
+    }
+
     <link href="~/css/articles.css" rel="stylesheet" />
     @Html.Raw(Model.Channel.Channel.PublicCss)
-    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" sync></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/imagesloaded/4.1.4/imagesloaded.pkgd.min.js"></script>
 
 </head>
@@ -49,8 +54,25 @@
 
     <div class="container-fluid">
         <div class="container">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
             <div class="py-2">
-                <h1>@Model.Channel.Channel.Title</h1>
+                <h1>
+                    <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" class="text-decoration-none text-dark">@Model.Channel.Channel.Title</a>
+                </h1>
                 <div>
                     @Html.Raw(Model.Channel.Channel.Description)
 
@@ -64,47 +86,55 @@
                         <form action="/@Model.Culture/c/@Model.Channel.Channel.PermaName" method="get">
                             <div class="input-group mb-3">
                                 <!-- Keyword Input -->
-                                <input type="text" name="keyword" placeholder="Type in keyword here" value="@Model.Articles.Keyword" class="form-control" />
+                                <input type="text" name="keyword" placeholder="Type in keyword here" value="@Model.Keyword" class="form-control" />
 
-                                @{
-                                    // Define sorting options for the dropdown
-                                    var sortOptions = new List<SelectListItem>
-                                {
-                                new SelectListItem { Value = "", Text = "Sort by" },
-                                new SelectListItem { Value = "title_asc", Text = "Title (A-Z)" },
-                                new SelectListItem { Value = "title_desc", Text = "Title (Z-A)" },
-                                new SelectListItem { Value = "publishdate_asc", Text = "Publish Date (Oldest First)" },
-                                new SelectListItem { Value = "publishdate_desc", Text = "Publish Date (Newest First)" }
-                                };
-
-                                    // Mark the currently selected option
-                                    var currentSort = Model.Articles.Sort?.ToLower();
-                                    foreach (var option in sortOptions)
-                                    {
-                                        if (option.Value == currentSort)
-                                        {
-                                            option.Selected = true;
-                                        }
-                                    }
-                                }
-
-                                <!-- Render the dropdown -->
+                                <!-- Sorting Dropdown -->
                                 <select name="sort" class="form-select">
-                                    @foreach (var option in sortOptions)
+                                    @if (Model.Sort == null || Model.Sort == "")
                                     {
-                                        if (option.Selected)
-                                        {
-                                            <option value="@option.Value" selected>@option.Text</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@option.Value">@option.Text</option>
-                                        }
+                                        <option value="" selected>Sort by</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="">Sort by</option>
+                                    }
 
+                                    @if (Model.Sort == "title_asc")
+                                    {
+                                        <option value="title_asc" selected>Title (A-Z)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="title_asc">Title (A-Z)</option>
+                                    }
+
+                                    @if (Model.Sort == "title_desc")
+                                    {
+                                        <option value="title_desc" selected>Title (Z-A)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="title_desc">Title (Z-A)</option>
+                                    }
+
+                                    @if (Model.Sort == "publishdate_asc")
+                                    {
+                                        <option value="publishdate_asc" selected>Publish Date (Oldest First)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="publishdate_asc">Publish Date (Oldest First)</option>
+                                    }
+
+                                    @if (Model.Sort == "publishdate_desc")
+                                    {
+                                        <option value="publishdate_desc" selected>Publish Date (Newest First)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="publishdate_desc">Publish Date (Newest First)</option>
                                     }
                                 </select>
-
-
                                 <!-- Submit Button -->
                                 <button class="btn btn-primary" type="submit">
                                     <i class="fa-solid fa-magnifying-glass"></i>
@@ -113,9 +143,31 @@
                         </form>
                     </div>
 
+                    <div>
+                        @if (!string.IsNullOrEmpty(Model.Folder))
+                        {
+                            <div>
+                                Filtered by Folder: @Model.Folder
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Tag))
+                        {
+                            <div>
+                                Filtered by Tag: @Model.Tag
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Author))
+                        {
+                            var tAuthor = Model.Channel.Authors.FirstOrDefault(a => a.PermaName == Model.Author);
+
+                            <div>
+                                Filtered by Author: @tAuthor.Title
+                            </div>
+                        }
+                    </div>
                     <div class="row" data-masonry='{"percentPosition": true }'>
-                        <!--Show list of articles here-->
-                        @foreach (var article in Model.Articles.Items)
+                        <!--Show list of articles here -->
+                        @foreach (var article in Model.Articles)
                         {
                             <div class="col-md-6 my-2">
                                 <div class="card my-2">
@@ -125,20 +177,80 @@
                                     }
                                     <div class="card-body">
                                         <p>
-                                            @article.PublishSince.ToString("yyyy-MM-dd")
+                                            @article.PublishSince?.ToString("yyyy-MM-dd")
                                         </p>
-                                        <h5><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName/d/@article.PermaName" class="text-decoration-none text-secondary stretched-link">@article.Title</a></h5>
+                                        <h5><a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName/d/@article.PermaName" class="text-decoration-none text-secondary">@article.Title</a></h5>
                                         <p>@article.Description</p>
                                     </div>
                                 </div>
                             </div>
                         }
                     </div>
+                    <!-- Page Nav -->
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            @{
+                                var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.ItemsPerPage);
+
+                                for (int i = 1; i <= totalPages; i++)
+                                {
+                                    var isActive = i == Model.CurrentPage ? "active" : "";
+                                    <li class="page-item @isActive">
+                                        <a class="page-link" href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@Model.Keyword&sort=@Model.Sort&currentPage=@i">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </nav>
                 </div>
+                <!-- Right side -->
                 <div class="col-md-4 my-2">
-                    <!--Show folders-->
+
+                    <!-- Subscribe -->
+                    @if (Model.CurrentUser == null)
+                    {
+                        <div class="card card-body my-2">
+                            <h3>Subscribe or Login</h3>
+                            <div class="py-2">
+                                <p>
+                                    If you're new here, register to receive email notifications whenever a new article is published. Subscribers can also comment on articles.
+                                </p>
+                                <p>
+                                    If you're already a subscriber, enter your email to receive a login passcode.
+                                </p>
+                            </div>
+                            <form action="/@Model.Culture/c/@Model.Channel.Channel.PermaName/subscribe-or-login" method="post">
+                                <div class="my-2">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email address" required />
+                                </div>
+                                <div class="my-2">
+                                    <button type="submit" class="btn btn-sm btn-primary">Submit</button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+
+                    <!-- Directories -->
                     <div class="card card-body my-2">
-                        <h3>Directories</h3>
+                        <h3>Filter by Directories</h3>
+
+                        @if (Model.Facets != null && Model.Facets.ContainsKey("Folders"))
+                        {
+                            <div>
+                                @foreach (var folder in Model.Facets["Folders"])
+                                {
+                                    <div class="py-1">
+                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@Model.Keyword&folder=@folder.Value" class="btn btn-light btn-sm">
+                                            <i class="fa-solid fa-folder"></i> @folder.Value
+                                            <span class="badge bg-primary">@folder.Count</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
 
                     <!--Show Authors-->
@@ -147,34 +259,56 @@
 
                         @if (Model.Channel.Authors != null)
                         {
-                            <div class="row">
+                            <div class="">
 
                                 @foreach (var author in Model.Channel.Authors)
                                 {
-                                    <div class="col-md-6 my-2">
-                                        <div class="card">
-                                            <div class="profile-image-container">
-                                                @if (!string.IsNullOrEmpty(author.ProfileImageUrl))
-                                                {
-                                                    <img src="@author.ProfileImageUrl" class="card-img-top" alt="@author.Title" />
-                                                }
-                                            </div>
-                                            <div class="card-body">
-                                                <h3 class="font-lg">
+                                    <div class="d-flex my-2">
+                                        <div class="profile-image-container-small pe-2">
+                                            @if (!string.IsNullOrEmpty(author.ProfileImageUrl))
+                                            {
+                                                <img src="@author.ProfileImageUrl" class="" alt="@author.Title" />
+                                            }
+                                        </div>
+                                        <div class="ps-2">
+                                            <div class="font-md">
+                                                <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?author=@author.PermaName" class="text-decoration-none text-dark">
                                                     @author.Title
-                                                </h3>
+                                                </a>
+                                            </div>
+                                            <div>
+                                                @author.Text
                                             </div>
                                         </div>
                                     </div>
+
                                 }
 
                             </div>
                         }
                     </div>
 
-                    <!--Show tags-->
+                    <!-- Tags -->
                     <div class="card card-body my-2">
                         <h3>Tags</h3>
+                        <div class="d-flex flex-wrap">
+                            @if (Model.Facets.TryGetValue("Tags", out var tagsFacet))
+                            {
+                                foreach (var tag in tagsFacet)
+                                {
+                                    <div class="my-1 p-1">
+                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@Model.Keyword&tag=@tag.Value" class="btn btn-light btn-sm">
+                                            @tag.Value <span class="badge bg-primary">@tag.Count</span>
+                                        </a>
+
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="px-1">No tags available</div>
+                            }
+                        </div>
                     </div>
 
                     <!--Show popular search-->
@@ -182,15 +316,13 @@
                         <h3>Popular Search Terms</h3>
                         @if (Model.Channel.SearchQueryHistory.Count > 0)
                         {
-                            <div>
+                            <div class="d-flex flex-wrap">
                                 @foreach (var search in Model.Channel.SearchQueryHistory.OrderByDescending(s => s.Counter).Take(10))
                                 {
-                                    <div class="d-flex justify-content-between align-items-center py-2">
-                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@search.RowKey" class="flex-grow-1 text-decoration-none text-dark">
-                                            @search.RowKey
+                                    <div class="my-1 p-1">
+                                        <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@search.RowKey" class="btn btn-sm btn-light">
+                                            @search.RowKey  <span class="badge bg-primary">@search.Counter</span>
                                         </a>
-                                        <span class="badge bg-primary">@search.Counter</span>
-
                                     </div>
                                 }
                             </div>
