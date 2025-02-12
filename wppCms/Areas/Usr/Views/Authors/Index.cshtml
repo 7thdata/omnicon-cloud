@@ -9,12 +9,19 @@
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 <div class="container my-5">
-    @if (TempData["Message"] != null)
+    @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success mt-3" role="alert">
-            @TempData["Message"]
+            @TempData["SuccessMessage"]
         </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mt-3" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+    
     <div class="d-flex justify-content-between">
         <div>
             <h1>@ViewData["Title"]</h1>

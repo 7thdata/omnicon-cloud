@@ -70,9 +70,9 @@ namespace wppCms.Areas.Usr.Controllers
 
             if (authors.Count == 0)
             {
-
+                TempData["ErrorMessage"] = "You have to have at least 1 author.";
                 // You have to have at least 1 author.
-                return RedirectToAction("Authors", "Index", new { culture = culture });
+                return RedirectToAction("Authors", "Index", new { @culture = culture, @channelId = channelId });
             }
 
             var viewModel = new UsrArticlesCreateEditViewModel
@@ -339,6 +339,9 @@ namespace wppCms.Areas.Usr.Controllers
 
             // Delete the article
             await _articleServices.DeleteArticleAsync(channelId, rowKey);
+
+            // Delete from search too
+            await _searchServices.UnIndexArticlesAsync(new List<string>() { rowKey });
 
             // Set a success message in TempData
             TempData["SuccessMessage"] = "The article has been successfully deleted.";

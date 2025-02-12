@@ -111,8 +111,10 @@ namespace apiCms.Controllers
                     return BadRequest(new { error = "Permaname is required." });
                 }
 
+                bool isPublishDateSensitive = articleRequest.IsPublishDateSensitive ?? false;
+
                 article = await _articleServices.GetArticleViewByPermaNameAsync(articleRequest.ChannelId,
-                    articleRequest.ArticlePermaName, articleRequest.Culture, true);
+                    articleRequest.ArticlePermaName, articleRequest.Culture, isPublishDateSensitive);
             }
 
             // If the article is not found, return a 404 response.

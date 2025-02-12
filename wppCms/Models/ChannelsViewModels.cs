@@ -10,6 +10,8 @@ namespace wppCms.Models
     public class ChannelsIndexViewModel : PageViewModel
     {
         public ChannelViewModel Channel { get; set; }
+        public ArticleViewModel TopArticle { get; set; }
+
         public List<ArticleSearchModel> Articles { get; set; }
         public Dictionary<string, IEnumerable<FacetValue>> Facets { get; set; }
         public long TotalCount { get; set; }

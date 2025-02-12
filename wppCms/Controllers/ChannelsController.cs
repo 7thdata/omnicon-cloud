@@ -62,60 +62,85 @@ namespace wppCms.Controllers
             var channel = await _channelServices.GetPublicChannelByPermaNameAsync(permaName);
             if (channel == null) return NotFound();
 
-            var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
-            channel.Authors = authors;
-
-            var searchQueryHistory = await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
-            channel.SearchQueryHistory = searchQueryHistory;
-
-            // Log the search keyword if it's not empty
-            if (!string.IsNullOrWhiteSpace(keyword))
+            if (channel.Channel.IsTopPageStaticPage)
             {
-                await _articleServices.RecordSearchKeywordAsync(channel.Channel.Id, keyword);
+                if (string.IsNullOrEmpty(channel.Channel.TopPagePermaName)) return NotFound();
+
+                var topArticle = await _articleServices.GetArticleViewByPermaNameAsync(channel.Channel.Id,
+                    channel.Channel.TopPagePermaName,culture,false);
+
+                if(topArticle == null) return NotFound();
+
+                var view = new ChannelsIndexViewModel
+                {
+                    CurrentUser = user,
+                    Culture = culture,
+                    Channel = channel,
+                    TopArticle = topArticle,    
+                    GaTagId = _appConfig.Ga.TagId,
+                    FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
+                };
+
+                return View(view);
             }
-
-            var searchResults = await _searchServices.SearchArticlesAsync(
-                partitionKey: channel.Channel.Id,
-                query: keyword,
-                isArticle: true,
-                showAuthor: true,
-                pageSize: itemsPerPage,
-                pageNumber: currentPage,
-                author: author,
-                folder: folder,
-                tag: tag,
-                sort: sort,
-                culture: culture);
-
-            var articles = searchResults.GetResults().Select(result => result.Document).ToList();
-            var totalCount = searchResults.TotalCount ?? 0;
-
-            var facets = searchResults.Facets.ToDictionary(
-                facet => facet.Key,
-                facet => facet.Value.Select(f => new FacetValue { Value = f.Value.ToString(), Count = f.Count ?? 0 }));
-
-            var view = new ChannelsIndexViewModel
+            else
             {
-                CurrentUser = user,
-                Culture = culture,
-                Channel = channel,
-                Articles = articles,
-                TotalCount = totalCount,
-                CurrentPage = currentPage,
-                ItemsPerPage = itemsPerPage,
-                Keyword = keyword,
-                Sort = sort,
-                GaTagId = _appConfig.Ga.TagId,
-                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
-                Facets = facets,
-                Tag = tag,
-                Folder = folder,
-                Author = author
-            };
+                var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
+                channel.Authors = authors;
 
-            return View(view);
+                var searchQueryHistory = await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
+                channel.SearchQueryHistory = searchQueryHistory;
+
+                // Log the search keyword if it's not empty
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    await _articleServices.RecordSearchKeywordAsync(channel.Channel.Id, keyword);
+                }
+
+                var searchResults = await _searchServices.SearchArticlesAsync(
+                    partitionKey: channel.Channel.Id,
+                    query: keyword,
+                    isArticle: true,
+                    showAuthor: true,
+                    pageSize: itemsPerPage,
+                    pageNumber: currentPage,
+                    author: author,
+                    folder: folder,
+                    tag: tag,
+                    sort: sort,
+                    culture: culture);
+
+                var articles = searchResults.GetResults().Select(result => result.Document).ToList();
+                var totalCount = searchResults.TotalCount ?? 0;
+
+                var facets = searchResults.Facets.ToDictionary(
+                    facet => facet.Key,
+                    facet => facet.Value.Select(f => new FacetValue { Value = f.Value.ToString(), Count = f.Count ?? 0 }));
+
+                var view = new ChannelsIndexViewModel
+                {
+                    CurrentUser = user,
+                    Culture = culture,
+                    Channel = channel,
+                    Articles = articles,
+                    TotalCount = totalCount,
+                    CurrentPage = currentPage,
+                    ItemsPerPage = itemsPerPage,
+                    Keyword = keyword,
+                    Sort = sort,
+                    GaTagId = _appConfig.Ga.TagId,
+                    FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                    Facets = facets,
+                    Tag = tag,
+                    Folder = folder,
+                    Author = author
+                };
+
+                return View(view);
+            }
         }
 
+        
         /// <summary>
         /// Add comment.
         /// </summary>
