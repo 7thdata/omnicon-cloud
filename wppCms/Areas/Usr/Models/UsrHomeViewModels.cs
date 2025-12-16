@@ -28,6 +28,7 @@ namespace wppCms.Areas.Usr.Models
     {
 
         public ChannelViewModel Channel { get; set; }
+        public List<string>? Folders { get; set; }
         
     }
 

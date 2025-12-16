@@ -76,18 +76,21 @@ namespace clsCms.Interfaces
         /// <returns>The URL of the thumbnail, or null if the thumbnail does not exist.</returns>
         Task<string?> GetThumbnailUrlAsync(string containerName, string fileName);
 
+       
         /// <summary>
-        /// Edits a file in Azure Blob Storage by renaming it or replacing its content.
+        /// Edit file.
         /// </summary>
-        /// <param name="containerName">The name of the container where the file is stored.</param>
-        /// <param name="currentFileName">The current name of the file.</param>
-        /// <param name="newFileName">The new name for the file (optional).</param>
-        /// <param name="newFile">The new file to replace the current content (optional).</param>
-        /// <returns>The URL of the updated file.</returns>
+        /// <param name="containerName"></param>
+        /// <param name="currentFileName"></param>
+        /// <param name="newFileName"></param>
+        /// <param name="newFileStream"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
         Task<string> EditFileAsync(
-            string containerName,
-            string currentFileName,
-            string? newFileName = null,
-            IFormFile? newFile = null);
+     string containerName,
+     string currentFileName,
+     string? newFileName = null,
+     Stream? newFileStream = null,
+     string? contentType = null);
     }
 }

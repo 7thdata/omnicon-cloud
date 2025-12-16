@@ -1,0 +1,164 @@
+@using wppCms.Areas.Admin.Models
+@model AdminChannelsDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Channel.Channel.Title;
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/channels">Channels</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Manage - @Model.Channel.Channel.Title</h1>
+        </div>
+        <div>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-6 my-2">
+            <table class="table">
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.Id
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.PermaName
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.Title
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.Description
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.IsArchived
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.Created
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.Updated
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.ArticleCount
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.CreatedBy
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.IsPublic
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.PublicCss
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.OrganizationId
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.IsTopPageStaticPage
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.TopPagePermaName
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.RootMediaFolder
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        @Model.Channel.Channel.DefaultCulture
+                    </td>
+                </tr>
+            </table>
+
+            <hr />
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h3>Members</h3>
+                </div>
+                <div>
+                    <a href="/@Model.Culture/admin/channel/@Model.Channel.Channel.Id/member/add">
+                        Create
+                    </a>
+                </div>
+            </div>
+
+            @if (Model.Channel.Members.Any())
+            {
+                <table class="table">
+                    <tr>
+                        <td>
+                            Id
+                        </td>
+                        <td>
+                            User Name
+                        </td>
+                        <td>
+                            Accepted
+                        </td>
+                    </tr>
+                    @foreach (var member in Model.Channel.Members)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/@Model.Culture/admin/channel/@Model.Channel.Channel.Id/member/@member.Membership.MembershipId">
+                                    @member.Membership.MembershipId
+                                </a>
+                            </td>
+
+                            <td>
+                                @member.User.UserName
+                            </td>
+
+                            <td>
+                                @member.Membership.IsAccepted
+                            </td>
+                        </tr>
+                    }
+                </table>
+            }
+        </div>
+        <div class="col-md-6 my-2">
+            <h2>Articles</h2>
+        </div>
+    </div>
+
+</div>

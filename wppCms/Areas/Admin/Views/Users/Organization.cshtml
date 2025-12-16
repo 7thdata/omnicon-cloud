@@ -1,0 +1,205 @@
+@using wppCms.Areas.Admin.Models
+@model AdminUsersOrganizationViewModel
+
+@{
+    ViewData["Title"] = Model.Organization.Organization.OrganizationName;
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Organizations</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Manage @Model.Organization.Organization.OrganizationName</h1>
+        </div>
+        <div>
+            <a href="/@Model.Culture/admin/channels?organizationId=@Model.Organization.Organization.OrganizationId">Channels</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 my-2">
+            <table class="table">
+                <tr>
+                    <td>
+                        Id
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationId
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationName
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Type
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationType
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Description
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationDescription
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Logo
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationLogo
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Website
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationWebsite
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Email
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationEmail
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Phone
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationPhone
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Address
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationAddress
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        City
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationCity
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        State
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationState
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Country
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.OrganizationCountry
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Created
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.Created
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        CreatedBy
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.CreatedBy
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Updated
+                    </td>
+                    <td>
+                        @Model.Organization.Organization.Updated
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="col-md-6 my-2">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h3>Members</h3>
+                </div>
+                <div>
+                    <a href="/@Model.Culture/admin/organization/@Model.Organization.Organization.OrganizationId/member/add">Create</a>
+                </div>
+            </div>
+
+            @if (Model.Organization.Members.Any())
+            {
+                <table class="table">
+                    <tr>
+                        <td>Member Id</td>
+                        <td>User Name</td>
+                        <td>Status</td>
+                        <td>
+                            Created
+                        </td>
+                        <td>
+                            Role
+                        </td>
+                    </tr>
+                    @foreach (var member in Model.Organization.Members)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/@Model.Culture/admin/organization/@Model.Organization.Organization.OrganizationId/member/@member.Member.MemberId">
+                                    @member.Member.MemberId
+                                </a>
+                            </td>
+                            <td>
+                                @member.User.UserName
+                            </td>
+                            <td>
+                                @member.Member.Status
+                            </td>
+                            <td>
+                                @member.Member.Created
+                            </td>
+                            <td>
+                                @member.Member.Role
+                            </td>
+                        </tr>
+                    }
+
+                </table>
+            }
+
+        </div>
+    </div>
+</div>

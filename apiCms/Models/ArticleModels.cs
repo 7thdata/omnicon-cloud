@@ -29,6 +29,8 @@ namespace apiCms.Models
         [JsonPropertyName("articlePermaName")]
         public string? ArticlePermaName { get; set; }
 
+        public bool? IsPublishDateSensitive { get; set; }
+
         [JsonPropertyName("culture")]
         public string Culture { get; set; }
     }

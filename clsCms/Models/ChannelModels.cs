@@ -60,6 +60,8 @@ namespace clsCms.Models
     [Table("ChannelMemberships")]
     public class ChannelMembershipModel
     {
+        public ChannelMembershipModel() { }
+
         public ChannelMembershipModel(string membershipId, string channelId, string userId, string invitedBy)
         {
             MembershipId = membershipId;

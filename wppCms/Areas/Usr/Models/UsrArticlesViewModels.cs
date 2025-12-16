@@ -6,6 +6,7 @@ namespace wppCms.Areas.Usr.Models
     public class UsrArticles_ArticlesViewModel : PageViewModel
     {
         public PaginationModel<ArticleModel> Articles { get; set; }
+        public string Folder { get; set; }
         public string ChannelId { get; set; }
     }
     public class UsrArticlesCreateEditViewModel : PageViewModel

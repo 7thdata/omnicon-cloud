@@ -7,6 +7,9 @@
         license_key: 'gpl',
         branding: false,
         content_css: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css,~/css/site.css',
+        relative_urls: false,
+        remove_script_host: false,
+        convert_urls: true,
         promotion: false,
         automatic_uploads: true,
         images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {

@@ -103,7 +103,7 @@ namespace wppCms.Areas.Usr.Controllers
             await _authorServices.CreateAuthorAsync(author);
 
             // Set success message
-            TempData["Message"] = $"Author '{author.Title}' has been successfully created.";
+            TempData["SuccessMessage"] = $"Author '{author.Title}' has been successfully created.";
 
             return RedirectToAction("Index", new { culture, @channelId = author.ChannelId });
 
@@ -143,7 +143,7 @@ namespace wppCms.Areas.Usr.Controllers
 
             await _authorServices.UpdateAuthorAsync(author);
 
-            TempData["Message"] = "Author updated successfully";
+            TempData["SuccessMessage"] = "Author updated successfully";
 
             return RedirectToAction("Details", new { culture = culture, authorId = authorId, channelId = channelId });
         }

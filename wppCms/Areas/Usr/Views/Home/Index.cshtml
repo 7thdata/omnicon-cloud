@@ -2,7 +2,7 @@
 @model UsrHomeIndexViewModel
 
 @{
-    ViewData["Title"] = "User Dashboard";
+    ViewData["Title"] = "Workspace";
     ViewData["FontAwsome"] = Model.FontAwsomeUrl;
     ViewData["Culture"] = Model.Culture;
 
@@ -10,51 +10,98 @@
 }
 
 <div class="container my-5">
-    <div class="row">
-        <div class="col text-center">
-            <h1>Welcome to Your CMS Dashboard</h1>
-            <p class="lead">Manage your articles, profiles, storage, and more with ease.</p>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item">
+                <a href="/@Model.Culture/usr/organizations">
+                    <i class="bi bi-building me-1"></i>Organizations
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                Channels
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">
+                <i class="bi bi-collection me-2"></i>
+                Channels
+            </h1>
+            <p class="text-muted mb-0">
+                Channels organize content and communication within your organization.
+            </p>
+        </div>
+
+        <div>
+            <button type="button"
+                    class="btn btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addChannelModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                New Channel
+            </button>
         </div>
     </div>
 
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <h2>Your Channels</h2>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal"
-                            data-bs-target="#addChannelModal">
-                        <i class="fa-solid fa-plus fa-fw"></i>
-                    </button>
-                </div>
+    <!-- Search -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       class="form-control"
+                       id="searchInput"
+                       onkeyup="searchTable()"
+                       placeholder="Search channels by name or permalink">
             </div>
+        </div>
+    </div>
 
-            <div>
-                <input type="text" class="form-control" id="searchInput" onkeyup="searchTable()" placeholder="Search for channels...">
-            </div>
-            <table class="table mt-3">
-                <thead>
+    <!-- Channel List -->
+    <div class="card border">
+        <div class="card-body p-0">
+            <table class="table mb-0 align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>Display Name</th>
                         <th>Perma Name</th>
-                        <th>Articles</th>
+                        <th class="text-end">Articles</th>
                     </tr>
                 </thead>
                 <tbody id="channelTableBody">
-                    @foreach (var channelViewModel in Model.Channels.Items)
+                    @if (Model.Channels.Items.Any())
+                    {
+                        foreach (var channelViewModel in Model.Channels.Items)
+                        {
+                            <tr>
+                                <td class="fw-semibold">
+                                    @channelViewModel.Channel.Title
+                                </td>
+                                <td>
+                                    <a href="/@Model.Culture/usr/channel/@channelViewModel.Channel.Id"
+                                       class="text-decoration-none">
+                                        <i class="bi bi-link-45deg me-1"></i>
+                                        @channelViewModel.Channel.PermaName
+                                    </a>
+                                </td>
+                                <td class="text-end text-muted">
+                                    @channelViewModel.Channel.ArticleCount.ToString("N0")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>@channelViewModel.Channel.Title</td> <!-- Access Title through Channel -->
-                            <td>
-                                <a href="/@Model.Culture/usr/channel/@channelViewModel.Channel.Id">
-                                    <!-- Access RowKey through Channel -->
-                                    @channelViewModel.Channel.PermaName <!-- Access PermaName through Channel -->
-                                </a>
-                            </td>
-                            <td class="text-end">
-                                @channelViewModel.Channel.ArticleCount.ToString("N0")
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No channels found.
                             </td>
                         </tr>
                     }
@@ -64,83 +111,108 @@
     </div>
 </div>
 
-<!-- Modal for Adding Channel -->
-<div class="modal fade" id="addChannelModal" tabindex="-1" aria-labelledby="addChannelModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Modal: Add Channel -->
+<div class="modal fade"
+     id="addChannelModal"
+     tabindex="-1"
+     aria-labelledby="addChannelModalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+
             <div class="modal-header">
-                <h5 class="modal-title" id="addChannelModalLabel">Add New Channel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="addChannelModalLabel">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Add New Channel
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
-                <!-- Add Channel Form -->
                 <form action="/@Model.Culture/usr/channel/add" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
                     <div class="mb-3">
-                        <label for="channelName" class="form-label">Channel Name</label>
-                        <input type="text" class="form-control" id="channelName" name="Title" required>
+                        <label class="form-label">Channel Name</label>
+                        <input type="text"
+                               class="form-control"
+                               name="Title"
+                               required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="channelPermaName" class="form-label">PermaName (Unique)</label>
-                        <input type="text" class="form-control" id="channelPermaName" name="PermaName" required
+                        <label class="form-label">PermaName</label>
+                        <input type="text"
+                               class="form-control"
+                               name="PermaName"
+                               required
                                pattern="[a-z0-9\-]+"
-                               title="PermaName must be lowercase and contain only letters, numbers, hyphens, and no spaces.">
-                        <span asp-validation-for="PermaName" class="text-danger"></span>
+                               title="Lowercase letters, numbers and hyphens only">
+                        <div class="form-text">
+                            Used in URLs. Cannot be changed later.
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="channelDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="channelDescription" name="Description"></textarea>
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control"
+                                  name="Description"
+                                  rows="3"></textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label for="defaultCulture" class="form-label">Default Culture</label>
-                        <input type="text" class="form-control" id="defaultCulture" name="DefaultCulture" required>
+                        <label class="form-label">Default Culture</label>
+                        <input type="text"
+                               class="form-control"
+                               name="DefaultCulture"
+                               required>
                     </div>
 
-                    <!-- New Checkbox for IsPublic -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isPublic" name="IsPublic">
-                        <label class="form-check-label" for="isPublic">Make Channel Public</label>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="IsPublic"
+                               id="isPublic">
+                        <label class="form-check-label" for="isPublic">
+                            Make channel public
+                        </label>
                     </div>
 
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            Create Channel
+                        </button>
+                    </div>
 
-                    <button type="submit" class="btn btn-primary">Add Channel</button>
                 </form>
             </div>
+
         </div>
     </div>
 </div>
 
-
 @section Scripts {
     <script>
         function searchTable() {
-            var input, filter, table, tr, td, i, j, txtValue;
-            input = document.getElementById("searchInput");
-            filter = input.value.toLowerCase();
-            table = document.getElementById("channelTableBody");
-            tr = table.getElementsByTagName("tr");
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const rows = document.getElementById("channelTableBody").getElementsByTagName("tr");
 
-            // Loop through all table rows
-            for (i = 0; i < tr.length; i++) {
-                tr[i].style.display = "none"; // Hide row by default
-                td = tr[i].getElementsByTagName("td");
+            for (let i = 0; i < rows.length; i++) {
+                let match = false;
+                const cells = rows[i].getElementsByTagName("td");
 
-                // Check each cell in the row
-                for (j = 0; j < td.length; j++) {
-                    if (td[j]) {
-                        txtValue = td[j].textContent || td[j].innerText;
-                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                            tr[i].style.display = ""; // Show row if it matches the search query
-                            break; // If a match is found, no need to check other columns
-                        }
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j] && cells[j].innerText.toLowerCase().includes(filter)) {
+                        match = true;
+                        break;
                     }
                 }
+                rows[i].style.display = match ? "" : "none";
             }
         }
     </script>
-
 }

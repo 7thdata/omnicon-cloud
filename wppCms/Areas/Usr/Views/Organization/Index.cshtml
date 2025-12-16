@@ -1,61 +1,127 @@
 ﻿@using wppCms.Areas.Usr.Models
 @model UsrOrganizationIndexViewModel
+
 @{
-    ViewData["Title"] = "Channels";
+    ViewData["Title"] = "Organizations";
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container my-5">
-    <div class="d-flex justify-content-between">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <h1>Channels</h1>
+            <h1 class="fw-bold mb-1">
+                <i class="bi bi-building me-2"></i>
+                Organizations
+            </h1>
+            <p class="text-muted mb-0">
+                Organizations you belong to and can manage.
+            </p>
         </div>
+
         <div>
-            <a href="/@Model.Culture/usr/organization/create" class="btn btn-primary">Create New Organization</a>
+            <a href="/@Model.Culture/usr/organization/create"
+               class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                New Organization
+            </a>
         </div>
     </div>
 
-    <hr />
-    @if (Model.Organizations.Count > 0)
+    <!-- Search -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       class="form-control"
+                       id="orgSearchInput"
+                       placeholder="Search organizations by name or type"
+                       onkeyup="filterOrganizations()" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Organization List -->
+    @if (Model.Organizations.Any())
     {
-        <table class="table">
-            <tr>
-                <td>
-                    Name
-                </td>
-                <td>
-                    Type
-                </td>
-                <td>
-                    Members
-                </td>
-            </tr>
-            @foreach (var organization in Model.Organizations)
-            {
-                <tr>
-                    <td>
-                        @if(Model.DefaultOrganizationId == organization.Organization.OrganizationId)
+        <div class="card border">
+            <div class="card-body p-0">
+                <table class="table mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th class="text-end">Members</th>
+                        </tr>
+                    </thead>
+                    <tbody id="organizationTableBody">
+                        @foreach (var organization in Model.Organizations)
                         {
-                            <span class="badge bg-success">Default</span><br/>
+                            <tr>
+                                <td>
+                                    @if (Model.DefaultOrganizationId == organization.Organization.OrganizationId)
+                                    {
+                                        <span class="badge bg-success mb-1">
+                                            <i class="bi bi-star-fill me-1"></i>
+                                            Default
+                                        </span>
+                                        <br />
+                                    }
+
+                                    <a href="/@Model.Culture/usr/organization/@organization.Organization.OrganizationId"
+                                       class="fw-semibold text-decoration-none">
+                                        @organization.Organization.OrganizationName
+                                    </a>
+                                </td>
+
+                                <td class="text-muted">
+                                    @organization.Organization.OrganizationType
+                                </td>
+
+                                <td class="text-end text-muted">
+                                    @organization.Members.Count().ToString("N0")
+                                </td>
+                            </tr>
                         }
-                        <a href="/@Model.Culture/usr/organization/@organization.Organization.OrganizationId">
-                            @organization.Organization.OrganizationName
-                        </a>
-                    </td>
-                    <td>
-                        @organization.Organization.OrganizationType
-                    </td>
-                    <td>
-                        @organization.Members.Count().ToString("N0")
-                    </td>
-                </tr>
-            }
-        </table>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
     else
     {
-        <div class="alert alert-info" role="alert">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
             No organizations found.
         </div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function filterOrganizations() {
+            const input = document.getElementById("orgSearchInput");
+            const filter = input.value.toLowerCase();
+            const rows = document
+                .getElementById("organizationTableBody")
+                ?.getElementsByTagName("tr") || [];
+
+            for (let i = 0; i < rows.length; i++) {
+                let visible = false;
+                const cells = rows[i].getElementsByTagName("td");
+
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].innerText.toLowerCase().includes(filter)) {
+                        visible = true;
+                        break;
+                    }
+                }
+                rows[i].style.display = visible ? "" : "none";
+            }
+        }
+    </script>
+}

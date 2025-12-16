@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Channels;
@@ -65,15 +66,66 @@ namespace clsCms.Services
         }
 
         /// <summary>
-        /// Get all channels (admin only)
+        /// Get channels
         /// </summary>
+        /// <param name="organizationId"></param>
+        /// <param name="keyword"></param>
+        /// <param name="sort"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
         /// <returns></returns>
-        public async Task<List<ChannelModel>> AdminGetAllChannels()
+        public async Task<PaginationModel<ChannelModel>> GetAllChannelsAsync(string organizationId,
+      string keyword, string sort, int currentPage, int itemsPerPage)
         {
-            var channels = await (from c in _db.Channels
-                                  select c).ToListAsync();
-            return channels;
+            IQueryable<ChannelModel> query = _db.Channels;
+
+            if (!string.IsNullOrEmpty(organizationId))
+            {
+                query = query.Where(c => c.OrganizationId == organizationId);
+            }
+
+            // Filtering
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                query = query.Where(c => c.Title.Contains(keyword) || c.PermaName.Contains(keyword));
+            }
+
+            // Sorting
+            var sortOptions = new Dictionary<string, Expression<Func<ChannelModel, object>>>
+    {
+        { "updated-desc", c => c.Updated },
+        { "updated-asc", c => c.Updated },
+        { "title-desc", c => c.Title },
+        { "title-asc", c => c.Title }
+    };
+
+            if (!string.IsNullOrEmpty(sort) && sortOptions.ContainsKey(sort))
+            {
+                query = sort.Contains("desc")
+                    ? query.OrderByDescending(sortOptions[sort])
+                    : query.OrderBy(sortOptions[sort]);
+            }
+            else
+            {
+                query = query.OrderBy(c => c.Title); // Default sorting
+            }
+
+            // Pagination
+            int totalItems = await query.CountAsync();
+            int totalPages = totalItems > 0 ? (int)Math.Ceiling((double)totalItems / itemsPerPage) : 0;
+
+            var pagedChannels = await query
+                .Skip((currentPage - 1) * itemsPerPage)
+                .Take(itemsPerPage)
+                .ToListAsync();
+
+            return new PaginationModel<ChannelModel>(pagedChannels, currentPage, itemsPerPage, totalItems, totalPages)
+            {
+                Sort = sort,
+                Keyword = keyword
+            };
         }
+
 
         /// <summary>
         /// Get chanel view of the channel id and user id.

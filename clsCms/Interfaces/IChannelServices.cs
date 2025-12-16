@@ -19,10 +19,16 @@ namespace clsCms.Interfaces
         Task<ChannelModel> CreateChannelAsync(ChannelModel channel);
 
         /// <summary>
-        /// Get all channels for admin.
+        /// Get channels
         /// </summary>
+        /// <param name="organizationId"></param>
+        /// <param name="keyword"></param>
+        /// <param name="sort"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
         /// <returns></returns>
-        Task<List<ChannelModel>> AdminGetAllChannels();
+        Task<PaginationModel<ChannelModel>> GetAllChannelsAsync(string organizationId,
+      string keyword, string sort, int currentPage, int itemsPerPage);
 
 
         /// <summary>

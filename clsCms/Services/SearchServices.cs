@@ -1,238 +1,292 @@
-﻿using Azure.Search.Documents.Indexes.Models;
-using Azure.Search.Documents.Indexes;
-using Azure.Search.Documents.Models;
+﻿using Azure;
 using Azure.Search.Documents;
-using Azure;
-using clsCms.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Azure.Search.Documents.Indexes;
+using Azure.Search.Documents.Indexes.Models;
+using Azure.Search.Documents.Models;
 using clsCms.Interfaces;
+using clsCms.Models;
 using Microsoft.Extensions.Options;
-
 
 namespace clsCms.Services
 {
     /// <summary>
-    /// Handles Azure Cognitive Search operations for articles.
+    /// Provides Azure Cognitive Search integration for article content.
+    ///
+    /// Responsibilities:
+    /// - Index & indexer lifecycle management
+    /// - Full-text article search
+    /// - Faceted navigation (tags, folders)
+    /// - Related article discovery
+    /// - Bulk indexing / de-indexing
+    ///
+    /// This service intentionally encapsulates Azure Search SDK usage
+    /// to keep controllers and domain services search-agnostic.
     /// </summary>
     public class SearchServices : ISearchServices
     {
-        private readonly string _searchServiceEndpoint;
-        private readonly string _searchServiceApiKey;
-        private readonly string _indexName = "articles";
         private readonly SearchIndexClient _indexClient;
         private readonly SearchIndexerClient _indexerClient;
         private readonly SearchClient _searchClient;
+
         private readonly IChannelServices _channelServices;
         private readonly IArticleServices _articleServices;
-        private readonly IOptions<AppConfigModel> _appConfig;
 
-        public SearchServices(IOptions<AppConfigModel> appConfig, IChannelServices channelServices, IArticleServices articleServices)
+        private readonly string _indexName;
+
+        /// <summary>
+        /// Initializes Azure Cognitive Search clients using application configuration.
+        /// </summary>
+        public SearchServices(
+            IOptions<AppConfigModel> appConfig,
+            IChannelServices channelServices,
+            IArticleServices articleServices)
         {
-            _appConfig = appConfig ?? throw new ArgumentNullException(nameof(appConfig), "AppConfigModel cannot be null.");
+            if (appConfig?.Value?.AzureSearch == null)
+                throw new ArgumentNullException(nameof(appConfig), "Azure Search configuration is missing.");
 
-            var azureSearchConfig = _appConfig.Value.AzureSearch ?? throw new ArgumentNullException(nameof(appConfig.Value.AzureSearch), "Azure Search configuration is missing.");
+            var config = appConfig.Value.AzureSearch;
 
-            _searchServiceEndpoint = $"https://{azureSearchConfig.SearchServiceName}.search.windows.net";
-            _searchServiceApiKey = azureSearchConfig.SearchApiKey ?? throw new ArgumentNullException(nameof(azureSearchConfig.SearchApiKey), "Azure Search API Key cannot be null.");
-            _indexName = azureSearchConfig.IndexName ?? "default-index"; // Default index name if not specified
+            if (string.IsNullOrWhiteSpace(config.SearchServiceName))
+                throw new ArgumentException("SearchServiceName is required.");
 
-            // Initialize Azure Cognitive Search clients
-            _indexClient = new SearchIndexClient(new Uri(_searchServiceEndpoint), new AzureKeyCredential(_searchServiceApiKey));
-            _indexerClient = new SearchIndexerClient(new Uri(_searchServiceEndpoint), new AzureKeyCredential(_searchServiceApiKey));
-            _searchClient = new SearchClient(new Uri(_searchServiceEndpoint), _indexName, new AzureKeyCredential(_searchServiceApiKey));
+            if (string.IsNullOrWhiteSpace(config.SearchApiKey))
+                throw new ArgumentException("SearchApiKey is required.");
+
+            _indexName = config.IndexName ?? "articles";
+
+            var endpoint = new Uri($"https://{config.SearchServiceName}.search.windows.net");
+            var credential = new AzureKeyCredential(config.SearchApiKey);
+
+            _indexClient = new SearchIndexClient(endpoint, credential);
+            _indexerClient = new SearchIndexerClient(endpoint, credential);
+            _searchClient = new SearchClient(endpoint, _indexName, credential);
+
             _channelServices = channelServices;
             _articleServices = articleServices;
         }
 
-        #region Index Management
+        #region Index management
+
+        /// <summary>
+        /// Creates or updates the article search index.
+        /// Uses <see cref="ArticleSearchModel"/> as the schema source.
+        /// </summary>
         public async Task CreateIndexAsync(string indexName)
         {
             var fieldBuilder = new FieldBuilder();
-            var searchFields = fieldBuilder.Build(typeof(ArticleSearchModel));
+            var fields = fieldBuilder.Build(typeof(ArticleSearchModel));
 
-            // Only include fields compatible with the suggester
             var index = new SearchIndex(indexName)
             {
-                Fields = searchFields,
+                Fields = fields,
+
+                // Suggester is intentionally limited to Title
+                // to avoid incompatible collection fields.
                 Suggesters =
-        {
-            new SearchSuggester("sg", new[] { "Title" }) // Removed "Tags" to ensure compatibility
-        }
+                {
+                    new SearchSuggester("sg", new[] { "Title" })
+                }
             };
 
             await _indexClient.CreateOrUpdateIndexAsync(index);
-            Console.WriteLine($"Index '{indexName}' created or updated.");
         }
 
+        /// <summary>
+        /// Deletes a search index.
+        /// </summary>
         public async Task DeleteIndexAsync(string indexName)
         {
             await _indexClient.DeleteIndexAsync(indexName);
-            Console.WriteLine($"Index '{indexName}' deleted.");
         }
 
+        /// <summary>
+        /// Lists all search indexes in the search service.
+        /// </summary>
         public async Task<List<string>> ListIndexesAsync()
         {
-            var indexes = _indexClient.GetIndexes();
-            return indexes.Select(index => index.Name).ToList();
+            return _indexClient
+                .GetIndexes()
+                .Select(i => i.Name)
+                .ToList();
         }
 
+        /// <summary>
+        /// Retrieves index statistics such as document count and storage size.
+        /// </summary>
         public async Task<SearchIndexStatistics> GetIndexStatisticsAsync(string indexName)
         {
             var response = await _indexClient.GetIndexStatisticsAsync(indexName);
             return response.Value;
         }
 
-        // --------------------- Indexer Management ---------------------
-        public async Task CreateIndexerAsync(string dataSourceName, string indexName, bool useSchedule = false, string? scheduleInterval = null)
+        #endregion
+
+        #region Indexer & data source management
+
+        /// <summary>
+        /// Creates or updates an Azure Search indexer.
+        /// Indexers are typically used for automated ingestion from storage.
+        /// </summary>
+        public async Task CreateIndexerAsync(
+            string dataSourceName,
+            string indexName,
+            bool useSchedule = false,
+            string? scheduleInterval = null)
         {
-            try
+            if (string.IsNullOrWhiteSpace(dataSourceName))
+                throw new ArgumentException("Data source name is required.", nameof(dataSourceName));
+
+            if (string.IsNullOrWhiteSpace(indexName))
+                throw new ArgumentException("Index name is required.", nameof(indexName));
+
+            var indexerName = $"{dataSourceName}-indexer";
+            var indexer = new SearchIndexer(indexerName, dataSourceName, indexName);
+
+            if (useSchedule && !string.IsNullOrWhiteSpace(scheduleInterval))
             {
-                // Validate inputs
-                if (string.IsNullOrEmpty(dataSourceName))
-                    throw new ArgumentException("Data source name cannot be null or empty.", nameof(dataSourceName));
-
-                if (string.IsNullOrEmpty(indexName))
-                    throw new ArgumentException("Index name cannot be null or empty.", nameof(indexName));
-
-                // Define the indexer
-                var indexerName = $"{dataSourceName}-indexer";
-                var indexer = new SearchIndexer(indexerName, dataSourceName, indexName);
-
-                // Optional: Configure a schedule if required
-                if (useSchedule && !string.IsNullOrEmpty(scheduleInterval))
+                indexer.Schedule = new IndexingSchedule(TimeSpan.Parse(scheduleInterval))
                 {
-                    var schedule = new IndexingSchedule(TimeSpan.Parse(scheduleInterval))
-                    {
-                        StartTime = DateTimeOffset.Now,
-                    };
-                    indexer.Schedule = schedule;
-                }
+                    StartTime = DateTimeOffset.UtcNow
+                };
+            }
 
-                // Create or update the indexer
-                await _indexerClient.CreateOrUpdateIndexerAsync(indexer);
-                Console.WriteLine($"Indexer '{indexer.Name}' created or updated.");
-            }
-            catch (RequestFailedException ex)
-            {
-                Console.Error.WriteLine($"Azure Search Service error: {ex.Message}");
-                throw; // Re-throw the exception for higher-level handling
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Unexpected error: {ex.Message}");
-                throw; // Re-throw unexpected errors
-            }
+            await _indexerClient.CreateOrUpdateIndexerAsync(indexer);
         }
+
+        /// <summary>
+        /// Lists all indexers registered in the search service.
+        /// </summary>
         public async Task<List<string>> ListIndexersAsync()
         {
             var indexers = await _indexerClient.GetIndexersAsync();
-            return indexers.Value.Select(indexer => indexer.Name).ToList();
+            return indexers.Value.Select(i => i.Name).ToList();
         }
 
+        /// <summary>
+        /// Manually triggers an indexer run.
+        /// </summary>
         public async Task StartIndexerAsync(string indexerName)
         {
             await _indexerClient.RunIndexerAsync(indexerName);
-            Console.WriteLine($"Indexer '{indexerName}' started.");
         }
 
+        /// <summary>
+        /// Resets indexer state (forces full reprocessing on next run).
+        /// </summary>
         public async Task ResetIndexerAsync(string indexerName)
         {
             await _indexerClient.ResetIndexerAsync(indexerName);
-            Console.WriteLine($"Indexer '{indexerName}' reset.");
         }
 
+        /// <summary>
+        /// Deletes an indexer.
+        /// </summary>
         public async Task DeleteIndexerAsync(string indexerName)
         {
             await _indexerClient.DeleteIndexerAsync(indexerName);
-            Console.WriteLine($"Indexer '{indexerName}' deleted.");
         }
 
-        // --------------------- Data Source Management ---------------------
-        public async Task CreateDataSourceAsync(string dataSourceName, string tableName, string storageConnectionString)
+        /// <summary>
+        /// Creates or updates a data source connection.
+        /// Typically used with Azure Table Storage.
+        /// </summary>
+        public async Task CreateDataSourceAsync(
+            string dataSourceName,
+            string tableName,
+            string storageConnectionString)
         {
-            var dataContainer = new SearchIndexerDataContainer(tableName)
-            {
-                Query = ""
-            };
+            var container = new SearchIndexerDataContainer(tableName);
 
             var dataSource = new SearchIndexerDataSourceConnection(
                 name: dataSourceName,
                 type: SearchIndexerDataSourceType.AzureTable,
                 connectionString: storageConnectionString,
-                container: dataContainer);
+                container: container);
 
             await _indexerClient.CreateOrUpdateDataSourceConnectionAsync(dataSource);
-            Console.WriteLine($"Data source '{dataSourceName}' created or updated.");
         }
 
+        /// <summary>
+        /// Lists all configured data sources.
+        /// </summary>
         public async Task<List<string>> ListDataSourcesAsync()
         {
-            var dataSources = await _indexerClient.GetDataSourceConnectionsAsync();
-            return dataSources.Value.Select(dataSource => dataSource.Name).ToList();
+            var sources = await _indexerClient.GetDataSourceConnectionsAsync();
+            return sources.Value.Select(s => s.Name).ToList();
         }
 
+        /// <summary>
+        /// Deletes a data source.
+        /// </summary>
         public async Task DeleteDataSourceAsync(string dataSourceName)
         {
             await _indexerClient.DeleteDataSourceConnectionAsync(dataSourceName);
-            Console.WriteLine($"Data source '{dataSourceName}' deleted.");
         }
 
         #endregion
 
+        #region Reindexing & upload
 
-        #region search and upload
-
+        /// <summary>
+        /// Reindexes all searchable articles across all channels.
+        ///
+        /// This is an expensive operation and should be used
+        /// for maintenance or recovery scenarios only.
+        /// </summary>
         public async Task Reindex()
         {
-            // Go through all channels and reindex them
-            var channels = await _channelServices.AdminGetAllChannels();
+            var channels = await _channelServices.GetAllChannelsAsync(
+                keyword: "",
+                sort: "",
+                organizationId: "",
+                currentPage: 1,
+                itemsPerPage: 1000);
 
-            foreach(var channel in channels)
+            foreach (var channel in channels.Items)
             {
-                var articles = await _articleServices.GetArticlesByChannelIdAsync("",channel.Id);
+                var articles = await _articleServices
+                    .GetArticlesByChannelIdAsync("", channel.Id);
 
-                var articlesToIndex = new List<ArticleSearchModel>();
-
-                foreach (var article in articles)
-                {
-                    if (article.IsArchived && !article.IsMoved && article.IsSearchable)
+                var documents = articles
+                    .Where(a =>
+                        a.IsArchived &&
+                        !a.IsMoved &&
+                        a.IsSearchable)
+                    .Select(a => new ArticleSearchModel
                     {
-                        var searchModel = new ArticleSearchModel()
-                        {
-                            IsArticle = article.IsArticle,
-                            AuthorName = article.AuthorName,
-                            IsArchived = article.IsArchived,
-                            ShowAuthor = article.ShowAuthor,
-                            UpdatedAt = article.UpdatedAt,
-                            CanonicalUrl = article.CanonicalUrl,
-                            Culture = article.Culture,
-                            Description = article.Description,
-                            Folders = article.Folders,
-                            MainImageUrl = article.MainImageUrl,
-                            PartitionKey = article.ChannelId,
-                            PermaName = article.PermaName,
-                            PublishSince = article.PublishSince,
-                            PublishUntil = article.PublishUntil,
-                            RowKey = article.RowKey,
-                            Tags = article.Tags?.Split(","),
-                            Text = article.Text,
-                            Title = article.Title,
-                            Version = article.Version
-                        };
+                        PartitionKey = a.ChannelId,
+                        RowKey = a.RowKey,
+                        Title = a.Title,
+                        Text = a.Text,
+                        Description = a.Description,
+                        Tags = a.Tags?.Split(','),
+                        Folders = a.Folders,
+                        AuthorName = a.AuthorName,
+                        ShowAuthor = a.ShowAuthor,
+                        IsArticle = a.IsArticle,
+                        IsArchived = a.IsArchived,
+                        Culture = a.Culture,
+                        CanonicalUrl = a.CanonicalUrl,
+                        MainImageUrl = a.MainImageUrl,
+                        PublishSince = a.PublishSince,
+                        PublishUntil = a.PublishUntil,
+                        PermaName = a.PermaName,
+                        Version = a.Version,
+                        UpdatedAt = a.UpdatedAt
+                    })
+                    .ToList();
 
-                        articlesToIndex.Add(searchModel);
-                    }
-                }
-
-                await IndexArticlesAsync(articlesToIndex);
+                await IndexArticlesAsync(documents);
             }
         }
 
-        // --------------------- Search and Upload ---------------------
+        #endregion
+
+        #region Search
+
+        /// <summary>
+        /// Performs a full-text article search with filters, sorting, pagination and facets.
+        /// </summary>
         public async Task<SearchResults<ArticleSearchModel>?> SearchArticlesAsync(
             string partitionKey,
             string query,
@@ -248,44 +302,34 @@ namespace clsCms.Services
             string? culture = null,
             bool isPublishDateSensitive = true)
         {
-            // Initialize filter clauses with PartitionKey
-            var filterClauses = new List<string>
+            var filters = new List<string>
             {
                 $"PartitionKey eq '{partitionKey}'"
             };
 
-            // Add optional filters
-            if (isArticle.HasValue) filterClauses.Add($"IsArticle eq {isArticle.Value.ToString().ToLower()}");
-            if (isArchived.HasValue) filterClauses.Add($"IsArchived eq {isArchived.Value.ToString().ToLower()}");
-            if (showAuthor.HasValue) filterClauses.Add($"ShowAuthor eq {showAuthor.Value.ToString().ToLower()}");
-            if (!string.IsNullOrWhiteSpace(folder)) filterClauses.Add($"Folders eq '{folder}'");
-            if (!string.IsNullOrWhiteSpace(tag)) filterClauses.Add($"Tags/any(t: t eq '{tag}')");
-            if (!string.IsNullOrWhiteSpace(author)) filterClauses.Add($"AuthorName eq '{author}'");
-            if (!string.IsNullOrWhiteSpace(culture))filterClauses.Add($"Culture eq '{culture}'");
+            if (isArticle.HasValue) filters.Add($"IsArticle eq {isArticle.Value.ToString().ToLower()}");
+            if (isArchived.HasValue) filters.Add($"IsArchived eq {isArchived.Value.ToString().ToLower()}");
+            if (showAuthor.HasValue) filters.Add($"ShowAuthor eq {showAuthor.Value.ToString().ToLower()}");
+            if (!string.IsNullOrWhiteSpace(folder)) filters.Add($"Folders eq '{folder}'");
+            if (!string.IsNullOrWhiteSpace(tag)) filters.Add($"Tags/any(t: t eq '{tag}')");
+            if (!string.IsNullOrWhiteSpace(author)) filters.Add($"AuthorName eq '{author}'");
+            if (!string.IsNullOrWhiteSpace(culture)) filters.Add($"Culture eq '{culture}'");
 
             if (isPublishDateSensitive)
             {
-                filterClauses.Add($"PublishSince le {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
-                filterClauses.Add($"PublishUntil ge {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
+                var now = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                filters.Add($"PublishSince le {now}");
+                filters.Add($"PublishUntil ge {now}");
             }
 
-            // Combine all filter clauses
-            var filter = string.Join(" and ", filterClauses);
-
-            // Configure search options
             var options = new SearchOptions
             {
-                Filter = filter,
-                IncludeTotalCount = true
+                Filter = string.Join(" and ", filters),
+                IncludeTotalCount = true,
+                Size = pageSize,
+                Skip = (pageNumber - 1) * pageSize
             };
 
-            if (pageSize > 0)
-            {
-                options.Size = pageSize;
-                options.Skip = (pageNumber - 1) * pageSize;
-            }
-
-            // Add fields to select
             options.Select.Add("Title");
             options.Select.Add("Folders");
             options.Select.Add("Tags");
@@ -295,120 +339,80 @@ namespace clsCms.Services
             options.Select.Add("Description");
             options.Select.Add("Culture");
 
-            // Add facets
             options.Facets.Add("Tags");
             options.Facets.Add("Folders");
 
-            // Handle sorting
-            if (!string.IsNullOrWhiteSpace(sort))
+            switch (sort?.ToLower())
             {
-                switch (sort.ToLower())
-                {
-                    case "title_asc":
-                        options.OrderBy.Add("Title asc");
-                        break;
-                    case "title_desc":
-                        options.OrderBy.Add("Title desc");
-                        break;
-                    case "publishdate_asc":
-                        options.OrderBy.Add("PublishSince asc");
-                        break;
-                    case "publishdate_desc":
-                        options.OrderBy.Add("PublishSince desc");
-                        break;
-                }
+                case "title_asc": options.OrderBy.Add("Title asc"); break;
+                case "title_desc": options.OrderBy.Add("Title desc"); break;
+                case "publishdate_asc": options.OrderBy.Add("PublishSince asc"); break;
+                case "publishdate_desc": options.OrderBy.Add("PublishSince desc"); break;
             }
 
-            // Execute search query
-            var results = await _searchClient.SearchAsync<ArticleSearchModel>(query, options);
-
-            // If there are no results or no hits, return empty result set
-            if (results.Value == null || results.Value.TotalCount == 0)
-            {
-                return null;
-            }
-
-            // Return search results
-            return results.Value;
+            var result = await _searchClient.SearchAsync<ArticleSearchModel>(query, options);
+            return result.Value?.TotalCount > 0 ? result.Value : null;
         }
 
         /// <summary>
-        /// Get just get facets of channel.
+        /// Retrieves only facet data (tags, folders) for a channel.
         /// </summary>
-        /// <param name="partitionKey"></param>
-        /// <param name="isArticle"></param>
-        /// <param name="isArchived"></param>
-        /// <param name="showAuthor"></param>
-        /// <returns></returns>
         public async Task<IDictionary<string, IList<FacetResult>>> GetFacetsAsync(
-    string partitionKey,
-    bool? isArticle = null,
-    bool? isArchived = null,
-    bool? showAuthor = null)
+            string partitionKey,
+            bool? isArticle = null,
+            bool? isArchived = null,
+            bool? showAuthor = null)
         {
-            var filterClauses = new List<string>
-    {
-        $"PartitionKey eq '{partitionKey}'"
-    };
+            var filters = new List<string>
+            {
+                $"PartitionKey eq '{partitionKey}'"
+            };
 
-            if (isArticle.HasValue) filterClauses.Add($"IsArticle eq {isArticle.Value.ToString().ToLower()}");
-            if (isArchived.HasValue) filterClauses.Add($"IsArchived eq {isArchived.Value.ToString().ToLower()}");
-            if (showAuthor.HasValue) filterClauses.Add($"ShowAuthor eq {showAuthor.Value.ToString().ToLower()}");
-
-            var filter = string.Join(" and ", filterClauses);
+            if (isArticle.HasValue) filters.Add($"IsArticle eq {isArticle.Value.ToString().ToLower()}");
+            if (isArchived.HasValue) filters.Add($"IsArchived eq {isArchived.Value.ToString().ToLower()}");
+            if (showAuthor.HasValue) filters.Add($"ShowAuthor eq {showAuthor.Value.ToString().ToLower()}");
 
             var options = new SearchOptions
             {
-                Filter = filter,
-                Size = 0, // Set size to 0 as we are not interested in documents
+                Filter = string.Join(" and ", filters),
+                Size = 0
             };
 
             options.Facets.Add("Tags");
             options.Facets.Add("Folders");
 
-            var results = await _searchClient.SearchAsync<ArticleSearchModel>("*", options); // Use wildcard to fetch facets
+            var results = await _searchClient.SearchAsync<ArticleSearchModel>("*", options);
             return results.Value.Facets;
         }
 
         /// <summary>
-        /// Get related articles.
+        /// Finds related articles based on shared tags.
         /// </summary>
-        /// <param name="partitionKey"></param>
-        /// <param name="currentArticleId"></param>
-        /// <param name="tags"></param>
-        /// <param name="pageSize"></param>
-        /// <returns></returns>
         public async Task<SearchResults<ArticleSearchModel>?> SearchRelatedArticlesAsync(
-    string partitionKey,
-    string currentArticleId,
-    IEnumerable<string> tags,
-    string culture,
-    int pageSize = 5)
+            string partitionKey,
+            string currentArticleId,
+            IEnumerable<string> tags,
+            string culture,
+            int pageSize = 5)
         {
             if (tags == null || !tags.Any())
-            {
-                return null; // Indicate no related articles were found
-            }
+                return null;
 
-            var filterClauses = new List<string>
+            var now = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            var filters = new List<string>
             {
                 $"PartitionKey eq '{partitionKey}'",
-                $"RowKey ne '{currentArticleId}'" // Exclude the current article
+                $"RowKey ne '{currentArticleId}'",
+                $"Culture eq '{culture}'",
+                $"PublishSince le {now}",
+                $"PublishUntil ge {now}",
+                $"({string.Join(" or ", tags.Select(t => $"Tags/any(x: x eq '{t}')"))})"
             };
-
-            filterClauses.Add($"PublishSince le {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
-            filterClauses.Add($"PublishUntil ge {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
-            filterClauses.Add($"Culture eq '{culture}'");
-
-            // Match any of the tags
-            var tagFilters = tags.Select(tag => $"Tags/any(t: t eq '{tag}')");
-            filterClauses.Add($"({string.Join(" or ", tagFilters)})");
-
-            var filter = string.Join(" and ", filterClauses);
 
             var options = new SearchOptions
             {
-                Filter = filter,
+                Filter = string.Join(" and ", filters),
                 Size = pageSize,
                 IncludeTotalCount = true
             };
@@ -420,24 +424,29 @@ namespace clsCms.Services
             options.Select.Add("Tags");
             options.Select.Add("MainImageUrl");
 
-            var results = await _searchClient.SearchAsync<ArticleSearchModel>("*", options);
-            return results.Value;
+            var result = await _searchClient.SearchAsync<ArticleSearchModel>("*", options);
+            return result.Value;
         }
 
+        #endregion
+
+        #region Index updates
+
+        /// <summary>
+        /// Uploads or updates article documents in the search index.
+        /// </summary>
         public async Task IndexArticlesAsync(IEnumerable<ArticleSearchModel> articles)
         {
             await _searchClient.UploadDocumentsAsync(articles);
-            Console.WriteLine("Documents uploaded to the search index.");
         }
 
+        /// <summary>
+        /// Removes articles from the search index by RowKey.
+        /// </summary>
         public async Task UnIndexArticlesAsync(IEnumerable<string> articleIds)
         {
-            // Create objects with only the RowKey for deletion
-            var keysToDelete = articleIds.Select(id => new { RowKey = id }).ToList();
-
-            // Use DeleteDocumentsAsync with the minimal data required
-            await _searchClient.DeleteDocumentsAsync(keysToDelete);
-            Console.WriteLine("Documents deleted from the search index.");
+            var keys = articleIds.Select(id => new { RowKey = id });
+            await _searchClient.DeleteDocumentsAsync(keys);
         }
 
         #endregion

@@ -9,22 +9,52 @@
 <div class="container-fluid mt-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
             <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
         </ol>
     </nav>
-    <h1>Manage Users</h1>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Manage Users</h1>
+        </div>
+        <div class="d-flex">
+            <div class="px-1"><a href="/@Model.Culture/admin/organizations">Organizations</a></div>
+            <div class="px-1"><a href="/@Model.Culture/admin/users/roles">Roles</a></div>
+        </div>
+    </div>
+
 
     <!-- Search form -->
-    <form method="get" class="input-group mb-3">
-        <input type="text" name="keyword" class="form-control" placeholder="Search..." value="@Model.Keyword" />
-        <button type="submit" class="btn btn-primary">Search</button>
+    <form method="get" class="my-2">
+        <div class="my-1">
+            <input type="text" name="keyword" class="form-control" placeholder="Search..." value="@Model.PaginatedUsers.Keyword" />
+        </div>
+        <div class="my-1">
+            <div class="form-check">
+                @if (Model.ShowOnlyEmailConfirmed)
+                {
+                    <input class="form-check-input" checked type="checkbox" value="true" name="showOnlyEmailConfirmed" id="chkEmailConfirmedOnly">
+                }
+                else
+                {
+                    <input class="form-check-input" type="checkbox" value="true" name="showOnlyEmailConfirmed" id="chkEmailConfirmedOnly">
+                }
+
+                <label class="form-check-label" for="chkEmailConfirmedOnly">
+                    Show ONLY Email Confirmed
+                </label>
+            </div>
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
     </form>
 
     <!-- Sort options -->
     <div class="mb-3">
-        <a href="?sort=username_asc&keyword=@Model.Keyword" class="btn btn-link">Sort by Username Ascending</a>
-        <a href="?sort=username_desc&keyword=@Model.Keyword" class="btn btn-link">Sort by Username Descending</a>
+        <a href="?sort=username_asc&keyword=@Model.PaginatedUsers.Keyword" class="btn btn-link">Sort by Username Ascending</a>
+        <a href="?sort=username_desc&keyword=@Model.PaginatedUsers.Keyword" class="btn btn-link">Sort by Username Descending</a>
     </div>
 
     <!-- Users table -->
@@ -34,8 +64,8 @@
                 <th>ID</th>
                 <th>Username</th>
                 <th>Email</th>
+                <th>Email Confirmed</th>
                 <th>Roles</th>
-
             </tr>
         </thead>
         <tbody>
@@ -43,12 +73,13 @@
             {
                 <tr>
                     <td>
-                        <a href="/Admin/Users/@userViewModel.User.Id">
+                        <a href="/@Model.Culture/admin/users/@userViewModel.User.Id">
                             @userViewModel.User.Id
                         </a>
                     </td>
                     <td>@userViewModel.User.UserName</td>
                     <td>@userViewModel.User.Email</td>
+                    <td>@userViewModel.User.EmailConfirmed</td>
                     <td>
                         @foreach (var role in userViewModel.Roles)
                         {
@@ -65,14 +96,27 @@
 
     <!-- Pagination controls -->
     <nav>
-        <ul class="pagination">
+        <div class="d-flex flex-wrap">
             @for (var i = 1; i <= Model.PaginatedUsers.TotalPages; i++)
             {
-                <li class="page-item @(Model.PaginatedUsers.CurrentPage == i ? "active" : "")">
-                    <a class="page-link"
-                        href="?page=@i&itemsPerPage=@Model.PaginatedUsers.ItemsPerPage&keyword=@Model.Keyword&sort=@Model.Sort">@i</a>
-                </li>
+                if (Model.PaginatedUsers.CurrentPage == i)
+                {
+                    <div class="m-1">
+                        <button disabled class="btn btn-sm btn-secondary"
+                                href="?page=@i&itemsPerPage=@Model.PaginatedUsers.ItemsPerPage&keyword=@Model.PaginatedUsers.Keyword&sort=@Model.PaginatedUsers.Sort&showOnlyEmailConfirmed=@Model.ShowOnlyEmailConfirmed">
+                            @i
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="m-1">
+                        <a class="btn btn-sm btn-primary"
+                           href="?page=@i&itemsPerPage=@Model.PaginatedUsers.ItemsPerPage&keyword=@Model.PaginatedUsers.Keyword&sort=@Model.PaginatedUsers.Sort&showOnlyEmailConfirmed=@Model.ShowOnlyEmailConfirmed">@i</a>
+
+                    </div>
+                }
             }
-        </ul>
+        </div>
     </nav>
 </div>

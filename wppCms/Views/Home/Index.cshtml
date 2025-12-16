@@ -5,7 +5,6 @@
     var title = Localizer["Title"];
     ViewData["Title"] = title;
     ViewData["GaTagId"] = Model.GaTagId;
-    ViewData["FontAwsome"] = Model.FontAwsomeUrl;
     ViewData["Culture"] = Model.Culture;
 }
 
@@ -41,7 +40,7 @@
                     {
                         <div class="px-2">
                             <a href="/en/usr" class="btn btn-secondary rounded-0">
-                                <i class="fa-solid fa-grid fa-fw"></i> @Localizer["Dashboard"]
+                                <i class="bi bi-grid-3x3-gap-fill"></i> @Localizer["Dashboard"]
                             </a>
                         </div>
                     }
@@ -49,18 +48,18 @@
                     {
                         <div class="px-2">
                             <a href="/identity/account/register" class="btn btn-secondary rounded-0">
-                                <i class="fa-solid fa-user-plus fa-fw"></i> @Localizer["Register"]
+                                <i class="bi bi-person-plus-fill"></i> @Localizer["Register"]
                             </a>
                         </div>
                         <div class="px-2">
                             <a href="/identity/account/login" class="btn btn-secondary rounded-0">
-                                <i class="fa-solid fa-right-to-bracket fa-fw"></i> @Localizer["Login"]
+                                <i class="bi bi-box-arrow-in-right"></i> @Localizer["Login"]
                             </a>
                         </div>
                     }
                     <div class="px-2">
-                        <a href="/en/c/omnicon-doc-en" class="btn btn-secondary rounded-0">
-                            <i class="fa-solid fa-file-doc fa-fw"></i> @Localizer["Docs"]
+                        <a href="/en/c/ominicon-cloud-wiki" class="btn btn-secondary rounded-0">
+                            <i class="bi bi-file-earmark-text"></i> @Localizer["Docs"]
                         </a>
                     </div>
                 </div>
@@ -70,37 +69,37 @@
         </div>
     </div>
 </div>
+
 <div class="container py-4">
     <div class="row">
         <div class="col-md-4 my-2">
             <h2>
-                <i class="fa-solid fa-code fa-fw"></i> @Localizer["FeatureApiAccessTitle"]
+                <i class="bi bi-code-slash"></i> @Localizer["FeatureApiAccessTitle"]
             </h2>
             <p>@Localizer["FeatureApiAccessDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><i class="fa-solid fa-bolt-lightning fa-fw"></i> @Localizer["FeaturePerformanceTitle"]</h2>
+            <h2><i class="bi bi-lightning-charge-fill"></i> @Localizer["FeaturePerformanceTitle"]</h2>
             <p>@Localizer["FeaturePerformanceDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><i class="fa-solid fa-magnifying-glass fa-fw"></i> @Localizer["FeatureSearchTitle"]</h2>
+            <h2><i class="bi bi-search"></i> @Localizer["FeatureSearchTitle"]</h2>
             <p>@Localizer["FeatureSearchDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><i class="fa-solid fa-warehouse fa-fw"></i> @Localizer["FeatureStorageTitle"]</h2>
+            <h2><i class="bi bi-hdd-stack-fill"></i> @Localizer["FeatureStorageTitle"]</h2>
             <p>@Localizer["FeatureStorageDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><i class="fa-regular fa-laptop-code fa-fw"></i> @Localizer["FeatureDeveloperCentricTitle"]</h2>
+            <h2><i class="bi bi-laptop"></i> @Localizer["FeatureDeveloperCentricTitle"]</h2>
             <p>@Localizer["FeatureDeveloperCentricDescription"]</p>
         </div>
         <div class="col-md-4 my-2">
-            <h2><i class="fa-solid fa-sliders fa-fw"></i> @Localizer["FeatureScalableTitle"]</h2>
+            <h2><i class="bi bi-sliders"></i> @Localizer["FeatureScalableTitle"]</h2>
             <p>@Localizer["FeatureScalableDescription"]</p>
         </div>
     </div>
 </div>
-
 
 <div class="container py-4">
     <h2 class="text-center pt-5" style="font-weight:600">@Localizer["PricingHeading"]</h2>

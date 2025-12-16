@@ -1,23 +1,25 @@
-﻿using AspNetCoreGeneratedDocument;
-using Azure.Search.Documents.Indexes.Models;
-using Azure.Search.Documents.Models;
-using clsCms.Interfaces;
+﻿using clsCms.Interfaces;
 using clsCms.Models;
 using clsCms.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.Extensions.Options;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Threading.Channels;
 using wppCms.Models;
 
 namespace wppCms.Controllers
 {
+    /// <summary>
+    /// Handles public channel pages including:
+    /// - Channel top page
+    /// - Article listing and filtering
+    /// - Article detail pages
+    /// - Comments
+    /// - Subscriptions
+    ///
+    /// This controller is intentionally public-facing and SEO-oriented.
+    /// </summary>
     public class ChannelsController : Controller
     {
         private readonly UserManager<UserModel> _userManager;
@@ -28,52 +30,96 @@ namespace wppCms.Controllers
         private readonly IUserServices _userServices;
         private readonly AppConfigModel _appConfig;
 
-        public ChannelsController(IChannelServices channelServices, ISearchServices searchServices,
-            IArticleServices articleServices, IAuthorServices authorServices,
-            IOptions<AppConfigModel> appConfig, UserManager<UserModel> userManager, IUserServices userServices)
+        /// <summary>
+        /// Initializes the <see cref="ChannelsController"/>.
+        /// </summary>
+        public ChannelsController(
+            IChannelServices channelServices,
+            ISearchServices searchServices,
+            IArticleServices articleServices,
+            IAuthorServices authorServices,
+            IUserServices userServices,
+            UserManager<UserModel> userManager,
+            IOptions<AppConfigModel> appConfig)
         {
             _channelServices = channelServices;
+            _searchServices = searchServices;
             _articleServices = articleServices;
             _authorServices = authorServices;
-            _appConfig = appConfig.Value;
-            _searchServices = searchServices;
-            _userManager = userManager;
             _userServices = userServices;
+            _userManager = userManager;
+            _appConfig = appConfig.Value;
         }
 
         /// <summary>
-        /// Show list of articles.
+        /// Displays a channel top page.
+        ///
+        /// Behavior differs based on channel configuration:
+        /// - Static top page → render a single article
+        /// - Dynamic channel → render article list with search and filters
         /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="permaName"></param>
-        /// <param name="keyword"></param>
-        /// <param name="author"></param>
-        /// <param name="sort"></param>
-        /// <param name="currentPage"></param>
-        /// <param name="itemsPerPage"></param>
-        /// <returns></returns>
         [Route("/{culture}/c/{permaName}")]
-        public async Task<IActionResult> Index(string culture, string permaName,
-    string keyword, string author, string folder,string tag, string sort = "publishdate_desc", int currentPage = 1, int itemsPerPage = 100)
+        public async Task<IActionResult> Index(
+            string culture,
+            string permaName,
+            string keyword,
+            string author,
+            string folder,
+            string tag,
+            string sort = "publishdate_desc",
+            int currentPage = 1,
+            int itemsPerPage = 100)
         {
-
-            var user = await _userManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
 
             var channel = await _channelServices.GetPublicChannelByPermaNameAsync(permaName);
-            if (channel == null) return NotFound();
+            if (channel == null)
+                return NotFound();
 
-            var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
-            channel.Authors = authors;
+            // ----------------------------------------
+            // Static top-page channel
+            // ----------------------------------------
+            if (channel.Channel.IsTopPageStaticPage)
+            {
+                if (string.IsNullOrEmpty(channel.Channel.TopPagePermaName))
+                    return NotFound();
 
-            var searchQueryHistory = await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
-            channel.SearchQueryHistory = searchQueryHistory;
+                var topArticle = await _articleServices.GetArticleViewByPermaNameAsync(
+                    channel.Channel.Id,
+                    channel.Channel.TopPagePermaName,
+                    culture,
+                    isPubslishDateSensitive: false);
 
-            // Log the search keyword if it's not empty
+                if (topArticle == null)
+                    return NotFound();
+
+                return View(new ChannelsIndexViewModel
+                {
+                    CurrentUser = currentUser,
+                    Culture = culture,
+                    Channel = channel,
+                    TopArticle = topArticle,
+                    GaTagId = _appConfig.Ga.TagId,
+                    FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
+                });
+            }
+
+            // ----------------------------------------
+            // Dynamic article listing channel
+            // ----------------------------------------
+
+            // Attach authors and historical search keywords
+            channel.Authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
+            channel.SearchQueryHistory =
+                await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
+
+            // Record keyword usage for analytics
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 await _articleServices.RecordSearchKeywordAsync(channel.Channel.Id, keyword);
             }
 
+            // Execute Azure Search query
             var searchResults = await _searchServices.SearchArticlesAsync(
                 partitionKey: channel.Channel.Id,
                 query: keyword,
@@ -87,414 +133,271 @@ namespace wppCms.Controllers
                 sort: sort,
                 culture: culture);
 
-            var articles = searchResults.GetResults().Select(result => result.Document).ToList();
-            var totalCount = searchResults.TotalCount ?? 0;
+            var articles = searchResults.GetResults()
+                .Select(r => r.Document)
+                .ToList();
 
             var facets = searchResults.Facets.ToDictionary(
-                facet => facet.Key,
-                facet => facet.Value.Select(f => new FacetValue { Value = f.Value.ToString(), Count = f.Count ?? 0 }));
+                f => f.Key,
+                f => f.Value.Select(v =>
+                    new FacetValue
+                    {
+                        Value = v.Value?.ToString() ?? "",
+                        Count = v.Count ?? 0
+                    }));
 
-            var view = new ChannelsIndexViewModel
+            return View(new ChannelsIndexViewModel
             {
-                CurrentUser = user,
+                CurrentUser = currentUser,
                 Culture = culture,
                 Channel = channel,
                 Articles = articles,
-                TotalCount = totalCount,
+                TotalCount = searchResults.TotalCount ?? 0,
                 CurrentPage = currentPage,
                 ItemsPerPage = itemsPerPage,
                 Keyword = keyword,
                 Sort = sort,
-                GaTagId = _appConfig.Ga.TagId,
-                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
                 Facets = facets,
                 Tag = tag,
                 Folder = folder,
-                Author = author
-            };
-
-            return View(view);
+                Author = author,
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
+            });
         }
 
         /// <summary>
-        /// Add comment.
+        /// Displays a single article detail page.
         /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="channelId"></param>
-        /// <param name="articleId"></param>
-        /// <param name="commentText"></param>
-        /// <returns></returns>
-        [HttpPost("/{culture}/c/{channelId}/a/{articleId}/comments")]
-        public async Task<IActionResult> AddComment(string culture, string channelId, string articleId, string commentText)
+        [Route("/{culture}/c/{channelName}/d/{permaName}")]
+        public async Task<IActionResult> Details(string culture, string channelName, string permaName)
         {
-            var channel = await _channelServices.GetChannelAsync(channelId);
-            var user = await _userManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var channel = await _channelServices.GetPublicChannelByPermaNameAsync(channelName);
 
-            // Validate the comment text
+            if (channel == null)
+                return NotFound();
+
+            // Attach channel metadata
+            channel.Authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
+            channel.SearchQueryHistory =
+                await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
+
+            // Load article
+            var articleView = await _articleServices.GetArticleViewByPermaNameAsync(
+                channel.Channel.Id,
+                permaName,
+                culture,
+                isPubslishDateSensitive: true);
+
+            if (articleView?.Article == null)
+                return NotFound();
+
+            // Load facets for sidebar filtering
+            var facets = await _searchServices.GetFacetsAsync(
+                partitionKey: channel.Channel.Id,
+                isArticle: true,
+                isArchived: false,
+                showAuthor: true);
+
+            // Resolve tags for related article search
+            var tags = string.IsNullOrEmpty(articleView.Article.Tags)
+                ? channel.Channel.Title
+                : articleView.Article.Tags;
+
+            var relatedArticles = (await _searchServices.SearchRelatedArticlesAsync(
+                partitionKey: channel.Channel.Id,
+                currentArticleId: articleView.Article.RowKey,
+                tags: tags.Split(','),
+                culture: culture,
+                pageSize: 5))
+                .GetResults()
+                .Select(r => r.Document)
+                .ToList();
+
+            // Log impression (page view analytics)
+            await LogImpressionAsync(HttpContext, articleView.Article, channel, culture);
+
+            return View(new ChannelsDetailsViewModel
+            {
+                CurrentUser = currentUser,
+                Culture = culture,
+                Channel = channel,
+                Article = articleView,
+                Facets = facets,
+                RelatedArticles = relatedArticles,
+                GaTagId = _appConfig.Ga.TagId,
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
+            });
+        }
+
+        /// <summary>
+        /// Adds a user comment to an article.
+        /// Comments are stored as JSON for flexible schema evolution.
+        /// </summary>
+        [HttpPost("/{culture}/c/{channelId}/a/{articleId}/comments")]
+        public async Task<IActionResult> AddComment(
+            string culture,
+            string channelId,
+            string articleId,
+            string commentText)
+        {
             if (string.IsNullOrWhiteSpace(commentText))
             {
                 TempData["ErrorMessage"] = "Comment text cannot be empty.";
-                return RedirectToAction("Details", new { culture, channelId, id = articleId });
+                return RedirectToAction("Details");
             }
 
-            // Fetch the article from the database
+            var user = await _userManager.GetUserAsync(User);
+            var channel = await _channelServices.GetChannelAsync(channelId);
             var article = await _articleServices.GetArticleByChannelIdAndIdAsync(channelId, articleId);
-            if (article == null)
-            {
-                TempData["ErrorMessage"] = "Article not found.";
-                return RedirectToAction("Details", new { culture, channelId, id = articleId });
-            }
 
-            // Deserialize existing comments
+            if (article == null || user == null)
+                return NotFound();
+
             var comments = string.IsNullOrEmpty(article.CommentJsonString)
                 ? new List<ArticleCommentModel>()
-                : JsonSerializer.Deserialize<List<ArticleCommentModel>>(article.CommentJsonString);
+                : JsonSerializer.Deserialize<List<ArticleCommentModel>>(article.CommentJsonString)
+                    ?? new List<ArticleCommentModel>();
 
-            // Create a new comment
-            var newComment = new ArticleCommentModel
+            comments.Add(new ArticleCommentModel
             {
                 CommentId = Guid.NewGuid().ToString(),
                 CommentText = commentText,
                 CommentById = user.Id,
                 CommentByName = user.NickName,
-                CommentByIconUrl = user.IconImage ?? "/images/profile/image/s512_f_object_174_0bg.png", // Replace with actual default URL or user-specific URL
+                CommentByIconUrl = user.IconImage
+                    ?? "/images/profile/image/s512_f_object_174_0bg.png",
                 Timestamp = DateTimeOffset.UtcNow
-            };
+            });
 
-            // Add the new comment to the list
-            comments.Add(newComment);
-
-            // Update the CommentJsonString
             article.CommentJsonString = JsonSerializer.Serialize(comments);
-
-            // Save the updated article
             await _articleServices.UpdateArticleAsync(article);
 
             TempData["SuccessMessage"] = "Your comment has been added.";
-            return RedirectToAction("Details", new { culture, @channelName = channel.Channel.PermaName, @permaName = article.PermaName });
+
+            return RedirectToAction(
+                "Details",
+                new
+                {
+                    culture,
+                    channelName = channel.Channel.PermaName,
+                    permaName = article.PermaName
+                });
         }
 
         /// <summary>
-        /// Delete comment.
+        /// Deletes a comment authored by the current user.
         /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="channelId"></param>
-        /// <param name="articleId"></param>
-        /// <param name="commentId"></param>
-        /// <returns></returns>
         [HttpPost("/{culture}/c/{channelId}/a/{articleId}/comments/{commentId}/delete")]
-        public async Task<IActionResult> DeleteComment(string culture, string channelId, string articleId, string commentId)
+        public async Task<IActionResult> DeleteComment(
+            string culture,
+            string channelId,
+            string articleId,
+            string commentId)
         {
             var channel = await _channelServices.GetChannelAsync(channelId);
-            // Fetch the article from the database
             var article = await _articleServices.GetArticleByChannelIdAndIdAsync(channelId, articleId);
-            if (article == null)
-            {
-                TempData["ErrorMessage"] = "Article not found.";
-                return RedirectToAction("Details", new { culture, channelId, id = articleId });
-            }
 
-            // Deserialize existing comments
+            if (article == null)
+                return NotFound();
+
             var comments = string.IsNullOrEmpty(article.CommentJsonString)
                 ? new List<ArticleCommentModel>()
-                : JsonSerializer.Deserialize<List<ArticleCommentModel>>(article.CommentJsonString);
+                : JsonSerializer.Deserialize<List<ArticleCommentModel>>(article.CommentJsonString)
+                    ?? new List<ArticleCommentModel>();
 
-            // Find the comment to delete
-            var commentToDelete = comments.FirstOrDefault(c => c.CommentId == commentId);
-            if (commentToDelete == null)
-            {
-                TempData["ErrorMessage"] = "Comment not found.";
-                return RedirectToAction("Details", new { culture, channelId, id = articleId });
-            }
+            var target = comments.FirstOrDefault(c => c.CommentId == commentId);
+            if (target == null)
+                return NotFound();
 
-            // Check if the current user is the author of the comment or has permission to delete
-            if (commentToDelete.CommentById != User?.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (target.CommentById != currentUserId)
             {
                 TempData["ErrorMessage"] = "You do not have permission to delete this comment.";
-                return RedirectToAction("Details", new { culture, channelId, id = articleId });
+                return RedirectToAction("Details");
             }
 
-            // Remove the comment from the list
-            comments.Remove(commentToDelete);
-
-            // Update the CommentJsonString
+            comments.Remove(target);
             article.CommentJsonString = JsonSerializer.Serialize(comments);
-
-            // Save the updated article
             await _articleServices.UpdateArticleAsync(article);
 
             TempData["SuccessMessage"] = "Comment deleted successfully.";
-            return RedirectToAction("Details", new { culture, @channelName = channel.Channel.PermaName, permaName = article.PermaName });
-        }
-        
-        /// <summary>
-        /// Show the article.
-        /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="channelName"></param>
-        /// <param name="permaName"></param>
-        /// <returns></returns>
-        [Route("/{culture}/c/{channelName}/d/{permaName}")]
-        public async Task<IActionResult> Details(string culture, string channelName, string permaName)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var channel = await _channelServices.GetPublicChannelByPermaNameAsync(channelName);
 
-            // Append authors on channel
-            var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
-            channel.Authors = authors;
-
-            // Append search query data
-            var searchQueryHistory = await _articleServices.GetSearchKeywordHistoryAsync(channel.Channel.Id);
-            channel.SearchQueryHistory = searchQueryHistory;
-
-            // Want to get search facets etc for the parition
-            var articles = await _searchServices.GetFacetsAsync(
-                partitionKey: channel.Channel.Id,
-                isArticle: true,
-                isArchived: false,
-            showAuthor: true);
-
-            var article = await _articleServices.GetArticleViewByPermaNameAsync(
-                 channelId: channel.Channel.Id,
-                 permaName: permaName,
-                 culture: culture,
-                 isPubslishDateSensitive: true);
-
-            if (article == null || article.Article == null)
-            {
-                return NotFound();
-            }
-
-            var tags = "";
-            if (string.IsNullOrEmpty(article.Article.Tags))
-            {
-                tags = channel.Channel.Title;
-            }
-            else
-            {
-                tags = article.Article.Tags;
-            }
-
-            var relatedArticlesResults = await _searchServices.SearchRelatedArticlesAsync(
-                partitionKey: channel.Channel.Id,
-                currentArticleId: article.Article.RowKey,
-                tags: tags.Split(","),
-                culture: culture,
-                pageSize: 5);
-
-            var relatedArticles = relatedArticlesResults.GetResults().Select(r => r.Document).ToList();
-
-            // Log the impression
-            await LogImpressionAsync(HttpContext, article.Article, channel, culture);
-
-            var view = new ChannelsDetailsViewModel()
-            {
-                CurrentUser = user,
-                Culture = culture,
-                Article = article,
-                Channel = channel,
-                GaTagId = _appConfig.Ga.TagId,
-                Facets = articles,
-                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
-                RelatedArticles = relatedArticles
-            };
-
-            return View(view);
+            return RedirectToAction(
+                "Details",
+                new
+                {
+                    culture,
+                    channelName = channel.Channel.PermaName,
+                    permaName = article.PermaName
+                });
         }
 
         /// <summary>
-        /// Log impression.
+        /// Logs an article impression for analytics purposes.
         /// </summary>
-        /// <param name="httpContext"></param>
-        /// <param name="article"></param>
-        /// <param name="channel"></param>
-        /// <param name="culture"></param>
-        /// <returns></returns>
-        private async Task LogImpressionAsync(HttpContext httpContext, ArticleModel article, ChannelViewModel channel, string culture)
+        private async Task LogImpressionAsync(
+            HttpContext httpContext,
+            ArticleModel article,
+            ChannelViewModel channel,
+            string culture)
         {
-            // Extract relevant data from HttpContext
-            var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = httpContext.Request.Headers["User-Agent"].ToString();
             var referrer = httpContext.Request.Headers["Referer"].ToString();
 
-            // Placeholder values for city and country
-            string city = "Unknown";
-            string country = "Unknown";
+            var (city, country) = await GetGeoInfoAsync(ip);
 
-            // Use a geolocation service (e.g., MaxMind or API) to get city and country
-            if (!string.IsNullOrEmpty(ipAddress))
-            {
-                try
-                {
-                    // Replace this with your geolocation logic
-                    (city, country) = await GetGeoInfoAsync(ipAddress);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Geolocation lookup failed: {ex.Message}");
-                }
-            }
-
-            // Create an impression model
             var impression = new ArticleImpressionModel
             {
+                ImpressionId = Guid.NewGuid().ToString(),
                 ArticleId = article.RowKey,
                 AuthorId = article.AuthorId,
-                Browser = userAgent,
                 ChannelId = channel.Channel.Id,
+                OrganizationId = channel.Channel.OrganizationId,
+                Culture = culture,
+                Language = culture,
+                ImpressionTime = DateTime.UtcNow,
+                IpAddress = ip,
+                Browser = userAgent,
+                UserAgent = userAgent,
+                Referrer = referrer,
                 City = city,
                 Country = country,
-                Culture = culture,
-                DeviceId = "", // Implement if needed
-                FolderId = article.Folders,
-                ImpressionId = Guid.NewGuid().ToString(),
-                ImpressionTime = DateTime.UtcNow,
-                IpAddress = ipAddress,
-                Language = culture,
-                OrganizationId = channel.Channel.OrganizationId,
-                Os = "", // Parse from User-Agent if needed
-                Referrer = referrer,
                 Tags = article.Tags,
-                UserAgent = userAgent,
-                UserId = httpContext.User.Identity.IsAuthenticated
+                UserId = httpContext.User.Identity?.IsAuthenticated == true
                     ? httpContext.User.FindFirst("sub")?.Value
                     : ""
             };
 
-            // Log the impression
             await _articleServices.LogArticleImpressionAsync(impression);
         }
 
         /// <summary>
-        /// Get location.
+        /// Resolves city and country information from an IP address.
+        /// Uses a public IP geolocation API.
         /// </summary>
-        /// <param name="ipAddress"></param>
-        /// <returns></returns>
-        private async Task<(string city, string country)> GetGeoInfoAsync(string ipAddress)
+        private async Task<(string city, string country)> GetGeoInfoAsync(string? ipAddress)
         {
             if (string.IsNullOrEmpty(ipAddress))
                 return ("Unknown", "Unknown");
 
             try
             {
-                using var httpClient = new HttpClient();
-                // IP-API endpoint for geolocation lookup
-                var response = await httpClient.GetStringAsync($"http://ip-api.com/json/{ipAddress}");
-                var json = Newtonsoft.Json.Linq.JObject.Parse(response);
+                using var http = new HttpClient();
+                var json = await http.GetStringAsync($"http://ip-api.com/json/{ipAddress}");
+                var obj = Newtonsoft.Json.Linq.JObject.Parse(json);
 
-                // Extract city and country from the JSON response
-                string city = json["city"]?.ToString() ?? "Unknown";
-                string country = json["country"]?.ToString() ?? "Unknown";
-
-                return (city, country);
+                return (
+                    obj["city"]?.ToString() ?? "Unknown",
+                    obj["country"]?.ToString() ?? "Unknown"
+                );
             }
-            catch (Exception ex)
+            catch
             {
-                // Log or handle errors gracefully
-                Console.WriteLine($"Error in geolocation lookup: {ex.Message}");
                 return ("Unknown", "Unknown");
             }
-        }
-
-        /// <summary>
-        /// Subscribe to the channel.
-        /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="channelId"></param>
-        /// <param name="name"></param>
-        /// <param name="email"></param>
-        /// <returns></returns>
-        [HttpPost("/{culture}/c/{channelId}/subscribe")]
-        public async Task<IActionResult> SubscribeToTheChannel(string culture, string channelId, string name, string email)
-        {
-            try
-            {
-                // Fetch the channel details
-                var channel = await _channelServices.GetChannelAsync(channelId);
-                if (channel == null)
-                {
-                    TempData["ErrorMessage"] = "Channel not found.";
-                    return RedirectToAction("Index", new { culture });
-                }
-
-                // Attempt to subscribe the user to the channel
-                var subscription = await _channelServices.SubscribeToTheChannelAsync(channelId, email, email, "subscriber", name);
-                if (subscription == null)
-                {
-                    TempData["ErrorMessage"] = "Subscription failed. Please try again.";
-                    return RedirectToAction("Index", new { culture, @permaName = channel.Channel.PermaName });
-                }
-
-                // See if this user is registered members
-                var user = await _userManager.FindByEmailAsync(email);
-                if (user == null)
-                {
-                    // Then register the user.
-                    var newUser = new UserModel
-                    {
-                        Email = email,
-                        UserName = email,
-                        NickName = name,
-                        EmailConfirmed = true
-                    };
-
-                    var result = await _userManager.CreateAsync(newUser);
-
-                    // Issue login link
-                    var loginLink = await _userServices.IssueLoginLinkAsync(newUser.Id);
-
-                    // Send login link to the user
-                }
-                else
-                {
-
-                    // Send login link to the user
-                }
-
-                // Success message
-                TempData["SuccessMessage"] = "You have successfully subscribed to the channel!";
-            }
-            catch (Exception ex)
-            {
-                // Log the exception and set an error message
-                TempData["ErrorMessage"] = $"An error occurred while subscribing: {ex.Message}";
-            }
-
-            return RedirectToAction("Index", new { culture, @permaName = channelId });
-        }
-
-
-        /// <summary>
-        /// Ubsubscribe to the channel.
-        /// </summary>
-        /// <param name="culture"></param>
-        /// <param name="channelId"></param>
-        /// <param name="subscriberId"></param>
-        /// <returns></returns>
-        public async Task<IActionResult> UnsubscribeTheChannel(string culture, string channelId, string subscriberId)
-        {
-            var channel = await _channelServices.GetChannelAsync(channelId);
-
-            try
-            {
-                var unsubscribeResult = await _channelServices.UnsbsribeToChannelAsync(channelId, subscriberId);
-
-                if (unsubscribeResult != null)
-                {
-                    TempData["SuccessMessage"] = "You have successfully unsubscribed from the channel.";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "Failed to unsubscribe. Please try again later.";
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"An error occurred while unsubscribing: {ex.Message}";
-            }
-
-            return RedirectToAction("Index", new { culture, @permaName = channel.Channel.PermaName });
         }
     }
 }

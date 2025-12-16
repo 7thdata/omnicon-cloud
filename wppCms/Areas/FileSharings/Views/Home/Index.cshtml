@@ -1,0 +1,29 @@
+﻿@using wppCms.Areas.FileSharings.Models
+@model FileSharingsHomeIndexViewModel
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Areas/FileSharings/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2>Enter Your Box Information</h2>
+
+    <form method="post" action="/@Model.Culture/filesharings/files">
+        <div class="mb-3">
+            <label for="boxId" class="form-label">Box ID (Directory Name) | ボックスIDを入力してください</label>
+            <input type="text" class="form-control" id="boxId" name="BoxId" required />
+        </div>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Your Name | 名前を入力してください</label>
+            <input type="text" class="form-control" id="name" name="Name" required />
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Your Email (optional) | メールアドレス（任意）</label>
+            <input type="email" class="form-control" id="email" name="Email" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Proceed to Upload Page</button>
+    </form>
+</div>

@@ -1,0 +1,100 @@
+@using wppCms.Areas.Admin.Models
+@model AdminChannelsChannelMemberViewModel
+
+@{
+    ViewData["Title"] = "Member";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/channels">Channels</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/channel/@Model.Channel.Channel.Id">@Model.Channel.Channel.Title</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Manage Member</h1>
+        </div>
+        <div>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-6 my-2">
+            <form action="/@Model.Culture/admin/channel/@Model.Channel.Channel.Id/member/upsert" method="post">
+                @Html.AntiForgeryToken()
+                <div class="py-2">
+                    <label>MembershipId</label>
+                    <input type="text" class="form-control" name="MembershipId" value="@Model.ChannelMembership.MembershipId" />
+                </div>
+                <div class="py-2">
+                    <label>ChannelId</label>
+                    <input type="text" class="form-control" name="ChannelId" value="@Model.ChannelMembership.ChannelId" />
+                </div>
+                <div class="py-2">
+                    <label>UserId</label>
+                    <input type="text" class="form-control" name="UserId" value="@Model.ChannelMembership.UserId" />
+                </div>
+                <div class="py-2">
+                    <label>InvitedOn</label>
+                    <input type="text" class="form-control" name="InvitedOn" value="@Model.ChannelMembership.InvitedOn" />
+                </div>
+                <div class="py-2">
+                    <label>InvitedBy</label>
+                    <input type="text" class="form-control" name="InvitedBy" value="@Model.ChannelMembership.InvitedBy" />
+                </div>
+
+                <div class="py-2">
+                    <label>Accepted</label>
+                    <input type="text" class="form-control" name="Accepted" value="@Model.ChannelMembership.Accepted" />
+                </div>
+                <div class="py-2">
+                    <label>IsAccepted</label>
+                    <input type="text" class="form-control" name="IsAccepted" value="@Model.ChannelMembership.IsAccepted.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>Rejected</label>
+                    <input type="text" class="form-control" name="Rejected" value="@Model.ChannelMembership.Rejected" />
+                </div>
+                <div class="py-2">
+                    <label>IsRejected</label>
+                    <input type="text" class="form-control" name="IsRejected" value="@Model.ChannelMembership.IsRejected.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>IsOwner</label>
+                    <input type="text" class="form-control" name="IsOwner" value="@Model.ChannelMembership.IsOwner.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>IsEditor</label>
+                    <input type="text" class="form-control" name="IsEditor" value="@Model.ChannelMembership.IsEditor.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>IsReviewer</label>
+                    <input type="text" class="form-control" name="IsReviewer" value="@Model.ChannelMembership.IsReviewer.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>IsArchived</label>
+                    <input type="text" class="form-control" name="IsArchived" value="@Model.ChannelMembership.IsArchived.ToString()" />
+                </div>
+                <div class="py-2">
+                    <label>Archived</label>
+                    <input type="text" class="form-control" name="Archived" value="@Model.ChannelMembership.Archived" />
+                </div>
+                <div class="py-2">
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </div>
+            </form>
+
+        </div>
+        <div class="col-md-6 my-2">
+           
+        </div>
+    </div>
+
+</div>

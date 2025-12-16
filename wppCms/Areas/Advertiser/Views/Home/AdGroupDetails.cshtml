@@ -30,13 +30,17 @@
         <div class="col-md-6 my-2">
             <p>
                 <a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id/campaign/@Model.AdCampaign.RowKey" class="text-decoration-none text-dark">
-                    <i class="fa-solid fa-arrow-left fa-fw"></i>
+                    <i class="bi bi-arrow-left"></i>
+
                 </a>
             </p>
             <div class="card card-body mb-4">
 
                 <h2>@Model.AdGroup.Name (@Model.AdGroup.Status)</h2>
-                <p><i class="fa-solid fa-hammer-crash fa-fw"></i> @Model.AdGroup.Bid.ToString("N0")</p>
+                <p>
+                    <i class="bi bi-hammer"></i>
+                    @Model.AdGroup.Bid.ToString("N0")
+                </p>
                 <p><strong>Campaign:</strong> @Model.AdCampaign.Name</p>
             </div>
 
@@ -50,7 +54,8 @@
                 <div>
                     <!-- Button to trigger modal for creating a new ad creative -->
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAdCreativeModal">
-                        <i class="fa-solid fa-plus fa-fw"></i>
+                        <i class="bi bi-plus"></i>
+
                     </button>
                 </div>
             </div>
@@ -75,7 +80,8 @@
                                 </div>
                                 <div class="my-2">
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-cloud-arrow-up fa-fw"></i>
+                                        <i class="bi bi-plus"></i>
+
                                     </button>
                                 </div>
 
@@ -102,7 +108,7 @@
                         </div>
                         <div class="px-1">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                                <i class="bi bi-search"></i>
                             </button>
                         </div>
                     </div>

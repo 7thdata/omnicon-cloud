@@ -48,10 +48,12 @@ namespace clsCms.Models
         [MaxLength(50)]
         public string? StorageSpace { get; set; }
 
+        /// <summary>
+        /// This is prefered or last used Organization Id.
+        /// </summary>
         public string? OrganizationId { get; set; }
-    }
 
-  
+    }
 
     /// <summary>
     /// Represents an organization in the system.
@@ -109,10 +111,16 @@ namespace clsCms.Models
         public DateTimeOffset? Joined { get; set; }
     }
 
+    public class OrganizationMemberViewModel
+    {
+        public OrganizationMemberModel Member { get; set; }
+        public UserModel User { get; set; }
+    }
+
     public class OrganizationViewModel
     {
         public OrganizationModel Organization { get; set; }
-        public List<OrganizationMemberModel> Members { get; set; }
+        public List<OrganizationMemberViewModel> Members { get; set; }
     }
 
     /// <summary>

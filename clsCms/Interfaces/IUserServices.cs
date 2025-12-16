@@ -5,16 +5,18 @@ namespace clsCms.Services
     public interface IUserServices
     {
         Task<UserViewModel> GetUserByIdAsync(string userId); // Fetch a user by ID;
-        
+
         /// <summary>
-        /// Fetches a paginated list of users along with their roles, allowing filtering by keyword and sorting.
+        /// Get users.(admin use)
         /// </summary>
-        /// <param name="currentPage">The current page to fetch.</param>
-        /// <param name="itemsPerPage">The number of users per page.</param>
-        /// <param name="keyword">Optional: A search keyword to filter users by username or email.</param>
-        /// <param name="sort">Optional: A string to determine sorting order (e.g., 'username_asc').</param>
-        /// <returns>A paginated list of users along with their associated roles.</returns>
-        Task<PaginationModel<UserViewModel>> GetUsersAsync(int currentPage, int itemsPerPage, string keyword = null, string sort = null);
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
+        /// <param name="keyword"></param>
+        /// <param name="sort"></param>
+        /// <param name="fetchOnlyEmailConfirmed"></param>
+        /// <returns></returns>
+        Task<PaginationModel<UserViewModel>> GetUsersAsync(int currentPage, int itemsPerPage,
+            string? keyword = null, string? sort = null, bool fetchOnlyEmailConfirmed = true);
 
 
         /// <summary>
@@ -74,5 +76,21 @@ namespace clsCms.Services
         /// </summary>
         /// <returns></returns>
         Task CleanExpiredLoginLinkAsync();
+
+        /// <summary>
+        /// Get organizations
+        /// </summary>
+        /// <param name="keyword"></param>
+        /// <param name="sort"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="itemsPerPage"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        PaginationModel<OrganizationModel> GetOrganizations(
+    string keyword,
+    string sort,
+    int currentPage,
+    int itemsPerPage,
+    string? userId);
     }
 }

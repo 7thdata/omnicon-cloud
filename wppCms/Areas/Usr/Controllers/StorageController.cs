@@ -153,12 +153,27 @@ namespace wppCms.Areas.Usr.Controllers
 
         [HttpPost]
         [Route("/{culture}/usr/channel/{channelId}/storage/edit/{fileName}")]
-        public async Task<IActionResult> Edit(string culture, string channelId, string fileName, string newFileName, IFormFile newFile)
+        public async Task<IActionResult> Edit(
+     string culture,
+     string channelId,
+     string fileName,
+     [FromForm] string newFileName,
+     [FromForm] IFormFile newFile)
         {
             var user = await GetAuthenticatedUserAsync();
             var channel = await GetChannelAsync(channelId);
 
-            await _blobStorageServices.EditFileAsync(channel.Channel.Id, fileName, newFileName, newFile);
+            // Open the uploaded file as a stream
+            using var stream = newFile.OpenReadStream();
+
+            // Call the updated service method with stream and content type
+            await _blobStorageServices.EditFileAsync(
+                channel.Channel.Id,
+                fileName,
+                newFileName,
+                stream,
+                newFile.ContentType);
+
             return Ok();
         }
 

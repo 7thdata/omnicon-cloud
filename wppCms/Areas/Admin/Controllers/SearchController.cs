@@ -11,7 +11,7 @@ using wppCms.Models;
 namespace wppCms.Areas.Admin.Controllers
 {
 
-    [Authorize]
+    [Authorize(Roles = "admin")]
     [Area("Admin")]
     [Route("/{culture}/admin/searches")]
     public class SearchController : Controller
@@ -157,6 +157,13 @@ namespace wppCms.Areas.Admin.Controllers
         {
             await _searchServices.DeleteDataSourceAsync(dataSourceName);
             return RedirectToAction("ListDataSources");
+        }
+
+        [HttpPost("unindex")]
+        public IActionResult DeleteSpecificDataInIndex(string key)
+        {
+            _searchServices.UnIndexArticlesAsync(new List<string>() { key});
+            return RedirectToAction("Index");
         }
 
     }

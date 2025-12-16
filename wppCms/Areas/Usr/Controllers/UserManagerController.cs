@@ -36,6 +36,8 @@ namespace wppCms.Areas.usr.Controllers
                 return NotFound("User not found");
             }
 
+            var roles = await _userManager.GetRolesAsync(user);
+
             var view = new UsrUserManagementIndexViewModel()
             {
                 Culture = culture,

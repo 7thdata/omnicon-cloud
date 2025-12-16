@@ -38,7 +38,8 @@ namespace wppCms.Areas.Usr.Controllers
         }
 
         [Route("/{culture}/usr/channel/{channelId}/_articles")]
-        public async Task<IActionResult> _Articles(string culture, string channelId, string keyword, string sort = "publishdate_desc",
+        public async Task<IActionResult> _Articles(string culture, string channelId, 
+            string keyword, string sort = "publishdate_desc", string folderPath = "",
             int currentPage = 1, int itemsPerPage = 100)
         {
             // Fetch the list of articles for the channel
@@ -47,13 +48,15 @@ namespace wppCms.Areas.Usr.Controllers
                 searchQuery: keyword,
                 currentPage: currentPage,
                 itemsPerPage: itemsPerPage,
+                folder: folderPath,
                 sort: sort, isPublishDateSensitive: false);
 
             var view = new UsrArticles_ArticlesViewModel()
             {
                 Articles = articles,
                 ChannelId = channelId,
-                Culture = culture
+                Culture = culture,
+                Folder = folderPath
             };
 
             return PartialView(view);
@@ -70,9 +73,9 @@ namespace wppCms.Areas.Usr.Controllers
 
             if (authors.Count == 0)
             {
-
+                TempData["ErrorMessage"] = "You have to have at least 1 author.";
                 // You have to have at least 1 author.
-                return RedirectToAction("Authors", "Index", new { culture = culture });
+                return RedirectToAction("Authors", "Index", new { @culture = culture, @channelId = channelId });
             }
 
             var viewModel = new UsrArticlesCreateEditViewModel
@@ -339,6 +342,9 @@ namespace wppCms.Areas.Usr.Controllers
 
             // Delete the article
             await _articleServices.DeleteArticleAsync(channelId, rowKey);
+
+            // Delete from search too
+            await _searchServices.UnIndexArticlesAsync(new List<string>() { rowKey });
 
             // Set a success message in TempData
             TempData["SuccessMessage"] = "The article has been successfully deleted.";

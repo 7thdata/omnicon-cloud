@@ -2,314 +2,365 @@
 using clsCms.Models;
 using clsCMs.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace clsCms.Services
 {
+    /// <summary>
+    /// Handles time-based aggregation of article impression analytics.
+    ///
+    /// This service is designed to be executed by background jobs
+    /// (e.g. Azure Functions, WebJobs, or cron-based workers).
+    ///
+    /// Aggregation levels:
+    /// - Raw impressions   → Hourly
+    /// - Hourly aggregates → Daily
+    /// - Daily aggregates  → Monthly
+    ///
+    /// Each aggregation step also applies data-retention cleanup
+    /// to keep raw tables compact and query-efficient.
+    /// </summary>
     public class TickServices : ITickServices
     {
         private readonly ApplicationDbContext _dbContext;
 
+        /// <summary>
+        /// Initializes the <see cref="TickServices"/>.
+        /// </summary>
         public TickServices(ApplicationDbContext dbContext)
         {
-
             _dbContext = dbContext;
         }
 
+        #region Hourly aggregation
+
         /// <summary>
-        /// Aggregate Hourly Impression Data.
+        /// Aggregates raw article impressions into hourly performance data.
+        ///
+        /// - Aggregates impressions for the current UTC hour
+        /// - Stores results in the hourly performance table
+        /// - Deletes raw impressions older than 7 days
+        ///
+        /// Intended to run once per hour.
         /// </summary>
-        /// <returns></returns>
         public async Task AggregateHourlyImpressionsAsync()
         {
-            // Define the time window for aggregation (last hour)
+            // -------------------------------------------------
+            // Define aggregation window (UTC hour)
+            // -------------------------------------------------
             var now = DateTime.UtcNow;
-            var startOfHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
+            var startOfHour = new DateTime(
+                now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
             var endOfHour = startOfHour.AddHours(1);
 
-            Console.WriteLine($"[LOG] Current Time: {now}");
-            Console.WriteLine($"[LOG] Aggregation Time Window: StartOfHour = {startOfHour}, EndOfHour = {endOfHour}");
-
-            // Query raw impressions within the time window
+            // -------------------------------------------------
+            // Fetch raw impressions in the window
+            // -------------------------------------------------
             var rawImpressions = await _dbContext.ArticleImpressions
-                .Where(impression => impression.ImpressionTime >= startOfHour && impression.ImpressionTime < endOfHour)
+                .Where(i =>
+                    i.ImpressionTime >= startOfHour &&
+                    i.ImpressionTime < endOfHour)
                 .ToListAsync();
 
-            Console.WriteLine($"[LOG] Raw impressions retrieved: {rawImpressions.Count}");
-            foreach (var impression in rawImpressions)
-            {
-                Console.WriteLine($"[LOG] Impression: OrgId={impression.OrganizationId}, ArticleId={impression.ArticleId}, " +
-                                  $"ChannelId={impression.ChannelId}, UserId={impression.UserId}, " +
-                                  $"ImpressionTime={impression.ImpressionTime}, Referrer={impression.Referrer}, " +
-                                  $"Country={impression.Country}, City={impression.City}");
-            }
+            if (!rawImpressions.Any())
+                return;
 
-            // Group raw impressions by OrganizationId, ArticleId, ChannelId, and Tick
-            var groupedImpressions = rawImpressions
-                .GroupBy(impression => new
+            // -------------------------------------------------
+            // Aggregate raw impressions
+            // -------------------------------------------------
+            var hourlyAggregates = rawImpressions
+                .GroupBy(i => new
                 {
-                    impression.OrganizationId,
-                    impression.ArticleId,
-                    impression.ChannelId,
+                    i.OrganizationId,
+                    i.ArticleId,
+                    i.ChannelId,
                     Tick = startOfHour
                 })
-                .Select(group => new ArticleImpressionHourlyModel
+                .Select(g => new ArticleImpressionHourlyModel
                 {
-                    Tick = group.Key.Tick,
-                    OrganizationId = group.Key.OrganizationId,
-                    ArticleId = group.Key.ArticleId,
-                    ChannelId = group.Key.ChannelId,
-                    TotalImpressions = group.Count(), // Total impressions
-                    UniqueUsers = group.Select(g => g.UserId).Distinct().Count(), // Unique users
-                    AverageImpressionDuration = group.Average(g => g.ImpressionTime.Second), // Optional
-                    TopReferrer = group
-                        .GroupBy(g => g.Referrer)
-                        .OrderByDescending(g => g.Count())
-                        .Select(g => g.Key)
+                    Tick = g.Key.Tick,
+                    OrganizationId = g.Key.OrganizationId,
+                    ArticleId = g.Key.ArticleId,
+                    ChannelId = g.Key.ChannelId,
+
+                    // Core metrics
+                    TotalImpressions = g.Count(),
+                    UniqueUsers = g
+                        .Select(x => x.UserId)
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Distinct()
+                        .Count(),
+
+                    // NOTE:
+                    // This is a placeholder approximation.
+                    // Replace with real duration tracking if needed.
+                    AverageImpressionDuration = g.Average(x => x.ImpressionTime.Second),
+
+                    // Popular dimensions
+                    TopReferrer = g
+                        .GroupBy(x => x.Referrer)
+                        .OrderByDescending(x => x.Count())
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCountry = group
-                        .GroupBy(g => g.Country)
-                        .OrderByDescending(g => g.Count())
-                        .Select(g => g.Key)
+
+                    TopCountry = g
+                        .GroupBy(x => x.Country)
+                        .OrderByDescending(x => x.Count())
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCity = group
-                        .GroupBy(g => g.City)
-                        .OrderByDescending(g => g.Count())
-                        .Select(g => g.Key)
+
+                    TopCity = g
+                        .GroupBy(x => x.City)
+                        .OrderByDescending(x => x.Count())
+                        .Select(x => x.Key)
                         .FirstOrDefault()
                 })
                 .ToList();
 
-            Console.WriteLine($"[LOG] Grouped impressions count: {groupedImpressions.Count}");
-            foreach (var grouped in groupedImpressions)
-            {
-                Console.WriteLine($"[LOG] Grouped Impression: OrgId={grouped.OrganizationId}, ArticleId={grouped.ArticleId}, " +
-                                  $"ChannelId={grouped.ChannelId}, Tick={grouped.Tick}, " +
-                                  $"TotalImpressions={grouped.TotalImpressions}, UniqueUsers={grouped.UniqueUsers}, " +
-                                  $"TopReferrer={grouped.TopReferrer}, TopCountry={grouped.TopCountry}, TopCity={grouped.TopCity}");
-            }
+            // -------------------------------------------------
+            // Persist hourly aggregates
+            // -------------------------------------------------
+            await _dbContext.ArticleImpressionHourlyPerformance
+                .AddRangeAsync(hourlyAggregates);
 
-            // Insert aggregated data into the hourly impressions table
-            if (groupedImpressions.Any())
-            {
-                try
-                {
-                    await _dbContext.ArticleImpressionHourlyPerformance.AddRangeAsync(groupedImpressions);
-                    var savedCount = await _dbContext.SaveChangesAsync();
-                    Console.WriteLine($"[LOG] Inserted {savedCount} grouped impressions into the hourly performance table.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[ERROR] Failed to insert grouped impressions: {ex.Message}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"[LOG] No grouped impressions to insert for the hour starting {startOfHour}.");
-            }
+            await _dbContext.SaveChangesAsync();
 
-            // Cleanup: Delete raw impressions older than 7 days
+            // -------------------------------------------------
+            // Cleanup: raw impressions (retention = 7 days)
+            // -------------------------------------------------
             var retentionThreshold = now.AddDays(-7);
-            var oldImpressions = _dbContext.ArticleImpressions
-                .Where(impression => impression.ImpressionTime < retentionThreshold);
 
-            var oldImpressionsCount = await oldImpressions.CountAsync();
-            Console.WriteLine($"[LOG] Raw impressions older than retention threshold: {oldImpressionsCount}");
+            var expiredRawImpressions = _dbContext.ArticleImpressions
+                .Where(i => i.ImpressionTime < retentionThreshold);
 
-            if (oldImpressionsCount > 0)
-            {
-                _dbContext.ArticleImpressions.RemoveRange(oldImpressions);
-
-                try
-                {
-                    var deletedCount = await _dbContext.SaveChangesAsync();
-                    Console.WriteLine($"[LOG] Deleted {deletedCount} raw impressions older than {retentionThreshold}.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[ERROR] Failed to delete old impressions: {ex.Message}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"[LOG] No old impressions to delete.");
-            }
+            _dbContext.ArticleImpressions.RemoveRange(expiredRawImpressions);
+            await _dbContext.SaveChangesAsync();
         }
 
+        #endregion
+
+        #region Daily aggregation
+
         /// <summary>
-        /// Aggregate Daily Impression Data from Hourly Data and Clean Up Old Hourly Data.
+        /// Aggregates hourly impression data into daily performance data.
+        ///
+        /// - Aggregates yesterday's hourly data
+        /// - Stores results in the daily performance table
+        /// - Deletes hourly data older than 14 days
+        ///
+        /// Intended to run once per day.
         /// </summary>
-        /// <returns></returns>
         public async Task AggregateDailyImpressionsAsync()
         {
-            // Define the time window for aggregation (yesterday)
             var now = DateTime.UtcNow;
-            var startOfDay = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc).AddDays(-1);
+
+            var startOfDay = new DateTime(
+                now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc)
+                .AddDays(-1);
+
             var endOfDay = startOfDay.AddDays(1);
 
-            // Query hourly impressions within the time window
-            var hourlyImpressions = await _dbContext.ArticleImpressionHourlyPerformance
-                .Where(impression => impression.Tick >= startOfDay && impression.Tick < endOfDay)
+            // -------------------------------------------------
+            // Fetch hourly aggregates
+            // -------------------------------------------------
+            var hourlyData = await _dbContext.ArticleImpressionHourlyPerformance
+                .Where(i =>
+                    i.Tick >= startOfDay &&
+                    i.Tick < endOfDay)
                 .ToListAsync();
 
-            // Group hourly data into daily aggregates
-            var dailyImpressions = hourlyImpressions
-                .GroupBy(impression => new
+            if (!hourlyData.Any())
+                return;
+
+            // -------------------------------------------------
+            // Aggregate into daily records
+            // -------------------------------------------------
+            var dailyAggregates = hourlyData
+                .GroupBy(i => new
                 {
-                    impression.OrganizationId,
-                    impression.ArticleId,
-                    impression.ChannelId,
+                    i.OrganizationId,
+                    i.ArticleId,
+                    i.ChannelId,
                     Tick = startOfDay
                 })
-                .Select(group => new ArticleImpressionDailyModel
+                .Select(g => new ArticleImpressionDailyModel
                 {
-                    Tick = group.Key.Tick,
-                    OrganizationId = group.Key.OrganizationId,
-                    ArticleId = group.Key.ArticleId,
-                    ChannelId = group.Key.ChannelId,
-                    TotalImpressions = group.Sum(g => g.TotalImpressions), // Sum hourly totals
-                    UniqueUsers = group
-                        .SelectMany(g => Enumerable.Repeat(g.UniqueUsers, g.TotalImpressions))
+                    Tick = g.Key.Tick,
+                    OrganizationId = g.Key.OrganizationId,
+                    ArticleId = g.Key.ArticleId,
+                    ChannelId = g.Key.ChannelId,
+
+                    TotalImpressions = g.Sum(x => x.TotalImpressions),
+
+                    // NOTE:
+                    // Unique users here are an approximation based on hourly aggregates.
+                    UniqueUsers = g
+                        .Select(x => x.UniqueUsers)
                         .Distinct()
-                        .Count(), // Approximate unique users
-                    AverageImpressionDuration = group
-                        .Average(g => g.AverageImpressionDuration * g.TotalImpressions / group.Sum(g => g.TotalImpressions)), // Weighted average
-                    TopReferrer = group
-                        .GroupBy(g => g.TopReferrer)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+                        .Count(),
+
+                    // Weighted average duration
+                    AverageImpressionDuration =
+                        g.Sum(x => x.AverageImpressionDuration * x.TotalImpressions)
+                        / Math.Max(1, g.Sum(x => x.TotalImpressions)),
+
+                    TopReferrer = g
+                        .GroupBy(x => x.TopReferrer)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCountry = group
-                        .GroupBy(g => g.TopCountry)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+
+                    TopCountry = g
+                        .GroupBy(x => x.TopCountry)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCity = group
-                        .GroupBy(g => g.TopCity)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+
+                    TopCity = g
+                        .GroupBy(x => x.TopCity)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault()
                 })
                 .ToList();
 
-            // Insert aggregated data into the daily impressions table
-            if (dailyImpressions.Any())
-            {
-                await _dbContext.ArticleImpressionDailyPerformance.AddRangeAsync(dailyImpressions);
-                await _dbContext.SaveChangesAsync();
-            }
+            await _dbContext.ArticleImpressionDailyPerformance
+                .AddRangeAsync(dailyAggregates);
 
-            Console.WriteLine($"Aggregated {dailyImpressions.Count} daily impressions for the day starting {startOfDay}.");
+            await _dbContext.SaveChangesAsync();
 
-            // Cleanup: Delete hourly impressions older than 14 days in batches
+            // -------------------------------------------------
+            // Cleanup: hourly data (retention = 14 days)
+            // -------------------------------------------------
             var hourlyRetentionThreshold = now.AddDays(-14);
             const int batchSize = 1000;
 
             while (true)
             {
-                var oldHourlyImpressions = await _dbContext.ArticleImpressionHourlyPerformance
-                    .Where(impression => impression.Tick < hourlyRetentionThreshold)
+                var expired = await _dbContext
+                    .ArticleImpressionHourlyPerformance
+                    .Where(i => i.Tick < hourlyRetentionThreshold)
                     .Take(batchSize)
                     .ToListAsync();
 
-                if (!oldHourlyImpressions.Any())
+                if (!expired.Any())
                     break;
 
-                _dbContext.ArticleImpressionHourlyPerformance.RemoveRange(oldHourlyImpressions);
-                var deletedCount = await _dbContext.SaveChangesAsync();
-
-                Console.WriteLine($"Deleted {deletedCount} hourly impressions older than {hourlyRetentionThreshold}.");
+                _dbContext.ArticleImpressionHourlyPerformance.RemoveRange(expired);
+                await _dbContext.SaveChangesAsync();
             }
         }
 
+        #endregion
+
+        #region Monthly aggregation
+
         /// <summary>
-        /// Aggregate Monthly Impression Data from Daily Data and Clean Up Old Daily Data.
+        /// Aggregates daily impression data into monthly performance data.
+        ///
+        /// - Aggregates previous month's daily data
+        /// - Stores results in the monthly performance table
+        /// - Deletes daily data older than 1 year
+        ///
+        /// Intended to run once per month.
         /// </summary>
-        /// <returns></returns>
         public async Task AggregateMonthlyImpressionsAsync()
         {
-            // Define the time window for aggregation (previous month)
             var now = DateTime.UtcNow;
-            var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-1);
+
+            var startOfMonth = new DateTime(
+                now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc)
+                .AddMonths(-1);
+
             var endOfMonth = startOfMonth.AddMonths(1);
 
-            // Query daily impressions within the time window
-            var dailyImpressions = await _dbContext.ArticleImpressionDailyPerformance
-                .Where(impression => impression.Tick >= startOfMonth && impression.Tick < endOfMonth)
+            // -------------------------------------------------
+            // Fetch daily aggregates
+            // -------------------------------------------------
+            var dailyData = await _dbContext.ArticleImpressionDailyPerformance
+                .Where(i =>
+                    i.Tick >= startOfMonth &&
+                    i.Tick < endOfMonth)
                 .ToListAsync();
 
-            // Group daily data into monthly aggregates
-            var monthlyImpressions = dailyImpressions
-                .GroupBy(impression => new
+            if (!dailyData.Any())
+                return;
+
+            // -------------------------------------------------
+            // Aggregate into monthly records
+            // -------------------------------------------------
+            var monthlyAggregates = dailyData
+                .GroupBy(i => new
                 {
-                    impression.OrganizationId,
-                    impression.ArticleId,
-                    impression.ChannelId,
+                    i.OrganizationId,
+                    i.ArticleId,
+                    i.ChannelId,
                     Tick = startOfMonth
                 })
-                .Select(group => new ArticleImpressionMonthlyModel
+                .Select(g => new ArticleImpressionMonthlyModel
                 {
-                    Tick = group.Key.Tick,
-                    OrganizationId = group.Key.OrganizationId,
-                    ArticleId = group.Key.ArticleId,
-                    ChannelId = group.Key.ChannelId,
-                    TotalImpressions = group.Sum(g => g.TotalImpressions), // Sum daily totals
-                    UniqueUsers = group
-                        .SelectMany(g => Enumerable.Repeat(g.UniqueUsers, g.TotalImpressions))
+                    Tick = g.Key.Tick,
+                    OrganizationId = g.Key.OrganizationId,
+                    ArticleId = g.Key.ArticleId,
+                    ChannelId = g.Key.ChannelId,
+
+                    TotalImpressions = g.Sum(x => x.TotalImpressions),
+
+                    UniqueUsers = g
+                        .Select(x => x.UniqueUsers)
                         .Distinct()
-                        .Count(), // Approximate unique users
-                    AverageImpressionDuration = group
-                        .Average(g => g.AverageImpressionDuration * g.TotalImpressions / group.Sum(g => g.TotalImpressions)), // Weighted average
-                    TopReferrer = group
-                        .GroupBy(g => g.TopReferrer)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+                        .Count(),
+
+                    AverageImpressionDuration =
+                        g.Sum(x => x.AverageImpressionDuration * x.TotalImpressions)
+                        / Math.Max(1, g.Sum(x => x.TotalImpressions)),
+
+                    TopReferrer = g
+                        .GroupBy(x => x.TopReferrer)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCountry = group
-                        .GroupBy(g => g.TopCountry)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+
+                    TopCountry = g
+                        .GroupBy(x => x.TopCountry)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault(),
-                    TopCity = group
-                        .GroupBy(g => g.TopCity)
-                        .OrderByDescending(g => g.Sum(gr => gr.TotalImpressions))
-                        .Select(g => g.Key)
+
+                    TopCity = g
+                        .GroupBy(x => x.TopCity)
+                        .OrderByDescending(x => x.Sum(y => y.TotalImpressions))
+                        .Select(x => x.Key)
                         .FirstOrDefault()
                 })
                 .ToList();
 
-            // Insert aggregated data into the monthly impressions table
-            if (monthlyImpressions.Any())
-            {
-                await _dbContext.ArticleImpressionMonthlyPerformance.AddRangeAsync(monthlyImpressions);
-                await _dbContext.SaveChangesAsync();
-            }
+            await _dbContext.ArticleImpressionMonthlyPerformance
+                .AddRangeAsync(monthlyAggregates);
 
-            Console.WriteLine($"Aggregated {monthlyImpressions.Count} monthly impressions for the month starting {startOfMonth}.");
+            await _dbContext.SaveChangesAsync();
 
-            // Cleanup: Delete daily impressions older than 1 year in batches
+            // -------------------------------------------------
+            // Cleanup: daily data (retention = 1 year)
+            // -------------------------------------------------
             var dailyRetentionThreshold = now.AddYears(-1);
             const int batchSize = 1000;
 
             while (true)
             {
-                var oldDailyImpressions = await _dbContext.ArticleImpressionDailyPerformance
-                    .Where(impression => impression.Tick < dailyRetentionThreshold)
+                var expired = await _dbContext
+                    .ArticleImpressionDailyPerformance
+                    .Where(i => i.Tick < dailyRetentionThreshold)
                     .Take(batchSize)
                     .ToListAsync();
 
-                if (!oldDailyImpressions.Any())
+                if (!expired.Any())
                     break;
 
-                _dbContext.ArticleImpressionDailyPerformance.RemoveRange(oldDailyImpressions);
-                var deletedCount = await _dbContext.SaveChangesAsync();
-
-                Console.WriteLine($"Deleted {deletedCount} daily impressions older than {dailyRetentionThreshold}.");
+                _dbContext.ArticleImpressionDailyPerformance.RemoveRange(expired);
+                await _dbContext.SaveChangesAsync();
             }
         }
+
+        #endregion
     }
 }
