@@ -12,7 +12,6 @@ using SixLabors.ImageSharp.Processing;
 using clsCms.Interfaces;
 using clsCms.Models;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Http;
 
 namespace clsCms.Services
 {
@@ -296,19 +295,23 @@ namespace clsCms.Services
             }
         }
 
+
         /// <summary>
-        /// Edits a file in Azure Blob Storage by renaming it or replacing its content.
+        /// Edits an existing file in Azure Blob Storage.
         /// </summary>
-        /// <param name="containerName">The name of the container where the file is stored.</param>
-        /// <param name="currentFileName">The current name of the file.</param>
-        /// <param name="newFileName">The new name for the file (optional).</param>
-        /// <param name="newFile">The new file to replace the current content (optional).</param>
-        /// <returns>The URL of the updated file.</returns>
+        /// <param name="containerName"></param>
+        /// <param name="currentFileName"></param>
+        /// <param name="newFileName"></param>
+        /// <param name="newFileStream"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        /// <exception cref="ApplicationException"></exception>
         public async Task<string> EditFileAsync(
-            string containerName,
-            string currentFileName,
-            string? newFileName = null,
-            IFormFile? newFile = null)
+     string containerName,
+     string currentFileName,
+     string? newFileName = null,
+     Stream? newFileStream = null,
+     string? contentType = null)
         {
             try
             {
@@ -329,11 +332,9 @@ namespace clsCms.Services
                 // If renaming is required
                 if (!string.Equals(currentFileName, targetFileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Copy the current blob to the new blob
                     var targetBlobClient = blobContainerClient.GetBlobClient(targetFileName);
                     await targetBlobClient.StartCopyFromUriAsync(currentBlobClient.Uri);
 
-                    // Wait for the copy to complete
                     var properties = await targetBlobClient.GetPropertiesAsync();
                     while (properties.Value.CopyStatus == CopyStatus.Pending)
                     {
@@ -346,24 +347,27 @@ namespace clsCms.Services
                         throw new ApplicationException($"Failed to copy blob '{currentFileName}' to '{targetFileName}'.");
                     }
 
-                    // Delete the original blob
                     await currentBlobClient.DeleteIfExistsAsync();
                 }
 
-                // If replacing the file content is required
-                if (newFile != null)
+                // If replacing the file content
+                if (newFileStream != null)
                 {
-                    using var fileStream = newFile.OpenReadStream();
                     var targetBlobClient = blobContainerClient.GetBlobClient(targetFileName);
-                    var blobHttpHeaders = new BlobHttpHeaders { ContentType = newFile.ContentType };
+                    var headers = new BlobHttpHeaders();
 
-                    // Upload the new file content
-                    await targetBlobClient.UploadAsync(fileStream, blobHttpHeaders);
+                    if (!string.IsNullOrWhiteSpace(contentType))
+                    {
+                        headers.ContentType = contentType;
+                    }
+
+                    await targetBlobClient.UploadAsync(newFileStream, new BlobUploadOptions
+                    {
+                        HttpHeaders = headers
+                    });
                 }
 
-                // Return the URL of the updated file
-                var updatedBlobClient = blobContainerClient.GetBlobClient(targetFileName);
-                return updatedBlobClient.Uri.ToString();
+                return blobContainerClient.GetBlobClient(targetFileName).Uri.ToString();
             }
             catch (Exception ex)
             {

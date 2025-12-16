@@ -7,153 +7,326 @@
 }
 
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <h1>Organization: @Model.Organization.Organization.OrganizationName</h1>
+            <h1 class="fw-bold mb-1">
+                <i class="bi bi-building me-2"></i>
+                @Model.Organization.Organization.OrganizationName
+            </h1>
+            <div class="text-muted small">
+                Organization Settings & Members
+            </div>
         </div>
-        <div>
+
+        <div class="text-end">
             @if (!Model.IsDefaultOrganization)
             {
                 <form action="/@Model.Culture/usr/organization/setasdefault" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="organizationId" value="@Model.Organization.Organization.OrganizationId" />
-                    <button type="submit" class="btn btn-info">
-                        Set as Default Organization
+                    <input type="hidden" name="organizationId"
+                           value="@Model.Organization.Organization.OrganizationId" />
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-star me-1"></i>
+                        Set as Default
                     </button>
                 </form>
             }
             else
             {
-                <span class="badge bg-success">Default Organization</span>
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Default Organization
+                </span>
             }
         </div>
     </div>
-    <hr />
 
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-success" role="alert">
+        <div id="tempDataAlert"
+             class="alert alert-success alert-dismissible fade show"
+             role="alert">
+            <i class="bi bi-check-circle me-2"></i>
             @TempData["Message"]
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"></button>
         </div>
     }
 
-    <div class="row">
-        <!-- Organization Details Form -->
-        <div class="col-md-7">
-            <form action="/@Model.Culture/usr/organization/upsert" method="post" class="needs-validation" novalidate>
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="organizationId" value="@Model.Organization.Organization.OrganizationId" />
+    <div class="row g-4">
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="organizationName" class="form-label">Organization Name</label>
-                        <input type="text" class="form-control" id="organizationName" name="organizationName"
-                               value="@Model.Organization.Organization.OrganizationName" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label for="organizationType" class="form-label">Organization Type</label>
-                        <select class="form-control" id="organizationType" name="organizationType" required>
-                            <option value="" disabled>Select an organization type</option>
-                            <option value="Corporate" @(Model.Organization.Organization.OrganizationType == "Corporate" ? "selected" : "")>Corporate</option>
-                            <option value="Non-Profit" @(Model.Organization.Organization.OrganizationType == "Non-Profit" ? "selected" : "")>Non-Profit</option>
-                            <option value="Government" @(Model.Organization.Organization.OrganizationType == "Government" ? "selected" : "")>Government</option>
-                            <option value="Educational" @(Model.Organization.Organization.OrganizationType == "Educational" ? "selected" : "")>Educational</option>
-                            <option value="Other" @(Model.Organization.Organization.OrganizationType == "Other" ? "selected" : "")>Other</option>
-                        </select>
-                    </div>
+        <!-- Organization Settings -->
+        <div class="col-lg-7">
+            <div class="card border">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-sliders me-2"></i>
+                    Organization Information
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label for="organizationDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="organizationDescription" name="organizationDescription" rows="4">@Model.Organization.Organization.OrganizationDescription</textarea>
-                    </div>
-                </div>
+                <div class="card-body">
+                    <form action="/@Model.Culture/usr/organization/upsert"
+                          method="post"
+                          class="needs-validation"
+                          novalidate>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="organizationLogo" class="form-label">Logo URL</label>
-                        <input type="url" class="form-control" id="organizationLogo" name="organizationLogo"
-                               value="@Model.Organization.Organization.OrganizationLogo" />
-                    </div>
-                    <div class="col-md-6">
-                        <label for="organizationWebsite" class="form-label">Website</label>
-                        <input type="url" class="form-control" id="organizationWebsite" name="organizationWebsite"
-                               value="@Model.Organization.Organization.OrganizationWebsite" />
-                    </div>
-                </div>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="organizationId"
+                               value="@Model.Organization.Organization.OrganizationId" />
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="organizationEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="organizationEmail" name="organizationEmail"
-                               value="@Model.Organization.Organization.OrganizationEmail" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label for="organizationPhone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="organizationPhone" name="organizationPhone"
-                               value="@Model.Organization.Organization.OrganizationPhone" />
-                    </div>
-                </div>
+                        <div class="row g-3">
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="organizationAddress" class="form-label">Address</label>
-                        <input type="text" class="form-control" id="organizationAddress" name="organizationAddress"
-                               value="@Model.Organization.Organization.OrganizationAddress" />
-                    </div>
-                    <div class="col-md-6">
-                        <label for="organizationCity" class="form-label">City</label>
-                        <input type="text" class="form-control" id="organizationCity" name="organizationCity"
-                               value="@Model.Organization.Organization.OrganizationCity" />
-                    </div>
-                </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Organization Name</label>
+                                <input class="form-control"
+                                       name="organizationName"
+                                       value="@Model.Organization.Organization.OrganizationName"
+                                       required />
+                            </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label for="organizationState" class="form-label">State</label>
-                        <input type="text" class="form-control" id="organizationState" name="organizationState"
-                               value="@Model.Organization.Organization.OrganizationState" />
-                    </div>
-                    <div class="col-md-4">
-                        <label for="organizationCountry" class="form-label">Country</label>
-                        <input type="text" class="form-control" id="organizationCountry" name="organizationCountry"
-                               value="@Model.Organization.Organization.OrganizationCountry" required />
-                    </div>
-                </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select class="form-select"
+                                        name="organizationType"
+                                        required>
+                                    <option value="">Select type</option>
+                                    @foreach (var type in new[] { "Corporate", "Non-Profit", "Government", "Educational", "Other" })
+                                    {
+                                        <option value="@type"
+                                                selected="@(Model.Organization.Organization.OrganizationType == type)">
+                                            @type
+                                        </option>
+                                    }
+                                </select>
+                            </div>
 
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary">Save Organization</button>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control"
+                                          name="organizationDescription"
+                                          rows="3">@Model.Organization.Organization.OrganizationDescription</textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Website</label>
+                                <input class="form-control"
+                                       name="organizationWebsite"
+                                       value="@Model.Organization.Organization.OrganizationWebsite" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Logo URL</label>
+                                <input class="form-control"
+                                       name="organizationLogo"
+                                       value="@Model.Organization.Organization.OrganizationLogo" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input class="form-control"
+                                       name="organizationEmail"
+                                       value="@Model.Organization.Organization.OrganizationEmail"
+                                       required />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Phone</label>
+                                <input class="form-control"
+                                       name="organizationPhone"
+                                       value="@Model.Organization.Organization.OrganizationPhone" />
+                            </div>
+
+                            <div class="col-md-8">
+                                <label class="form-label">Address</label>
+                                <input class="form-control"
+                                       name="organizationAddress"
+                                       value="@Model.Organization.Organization.OrganizationAddress" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Country</label>
+                                <input class="form-control"
+                                       name="organizationCountry"
+                                       value="@Model.Organization.Organization.OrganizationCountry"
+                                       required />
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
 
-        <!-- Members List -->
-        <div class="col-md-5">
-            <h5>Members</h5>
-            <ul class="list-group">
-                @if (Model.Organization.Members != null && Model.Organization.Members.Any())
-                {
-                    @foreach (var member in Model.Organization.Members)
+        <!-- Members & Channels -->
+        <div class="col-lg-5 d-flex flex-column gap-4">
+
+            <!-- Members -->
+            <div class="card border">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">
+                        <i class="bi bi-people me-2"></i>
+                        Members
+                    </span>
+                    <button class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addMemberModal">
+                        <i class="bi bi-person-plus me-1"></i>
+                        Add Member
+                    </button>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    @if (Model.Organization.Members?.Any() == true)
                     {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>
-                                <strong>Member ID:</strong> @member.MemberId<br />
-                                <strong>User ID:</strong> @member.UserId<br />
-                                <strong>Role:</strong> @member.Role<br />
-                                <strong>Status:</strong> @member.Status
-                            </span>
-                            <span>
-                                <button class="btn btn-sm btn-danger">Remove</button>
-                            </span>
+                        foreach (var member in Model.Organization.Members)
+                        {
+                            <li class="list-group-item">
+                                <div class="fw-semibold">
+                                    <i class="bi bi-person me-1"></i>
+                                    @member.User.UserName
+                                </div>
+                                <div class="small text-muted">
+                                    Role: @member.Member.Role · Status: @member.Member.Status
+                                </div>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-muted">
+                            No members yet.
                         </li>
                     }
-                }
-                else
-                {
-                    <li class="list-group-item text-muted">No members found.</li>
-                }
-            </ul>
+                </ul>
+            </div>
+            <!-- Channels -->
+            <div class="card border">
+                <div class="card-header bg-light">
+                    <span class="fw-semibold">
+                        <i class="bi bi-chat-dots me-2"></i>
+                        Channels
+                    </span>
+                </div>
+
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Channels organize communication and content within this organization.
+                        View and manage channels from the main workspace.
+                    </p>
+
+                    <a class="btn btn-outline-primary w-100"
+                       href="/@Model.Culture/usr?organizationId=@Model.Organization.Organization.OrganizationId">
+                        <i class="bi bi-arrow-right-circle me-1"></i>
+                        Go to Channels
+                    </a>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+<!-- Add Member Modal -->
+<div class="modal fade"
+     id="addMemberModal"
+     tabindex="-1"
+     aria-hidden="true">
+    @Html.AntiForgeryToken()
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus me-1"></i>
+                    Add Member
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+                    <label class="form-label">User Email</label>
+                    <input type="email"
+                           class="form-control"
+                           id="addMemberEmail"
+                           placeholder="user@example.com"
+                           required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" id="addMemberRole">
+                        <option value="Member">Member</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        id="addMemberBtn">
+                    Add Member
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+              
+            const alert = $('#tempDataAlert');
+            if (alert.length) {
+                setTimeout(function () {
+                    alert.alert('close');
+                }, 4000); // 4 seconds
+            }
+
+            $('#addMemberBtn').on('click', function () {
+
+                const email = $('#addMemberEmail').val();
+                const role = $('#addMemberRole').val();
+
+                if (!email) {
+                    alert('Please enter email.');
+                    return;
+                }
+
+                $.post('/@Model.Culture/usr/organization/add-member', {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val(),
+                    organizationId: '@Model.Organization.Organization.OrganizationId',
+                    email: email,
+                    role: role
+                })
+                .done(function () {
+                    location.reload();
+                })
+                .fail(function () {
+                    alert('Failed to add member.');
+                });
+            });
+
+        });
+    </script>
+}

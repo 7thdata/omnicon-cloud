@@ -14,6 +14,7 @@ namespace wppCms.Areas.Usr.Models
     public class UsrUserManagementIndexViewModel : PageViewModel
     {
         public UserModel User { get; set; }
+        public IList<string> Roles { get; set; }
     }
 
     public class UsrUserManagementChangeEmailViewModel : PageViewModel

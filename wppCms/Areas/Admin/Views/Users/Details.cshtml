@@ -9,8 +9,8 @@
 <div class="container-fluid mt-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/users">Users</a></li>
             <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
         </ol>
     </nav>
@@ -35,7 +35,7 @@
                 <h5>EmailConfirmed:</h5>
                 <p>@Model.User.EmailConfirmed</p>
                 <div>
-                    <form action="/admin/users/@Model.User.Id/switchemailconfirm" method="post">
+                    <form action="/@Model.Culture/admin/users/@Model.User.Id/switchemailconfirm" method="post">
                         @Html.AntiForgeryToken()
                         <button class="btn btn-secondary" type="submit">
                             Switch Email Confirmed
@@ -56,8 +56,8 @@
             </div>
             <!-- Action buttons for Edit, Delete, and Back -->
             <div class="mt-4">
-                <a href="/Admin/Users/Edit/@Model.User.Id" class="btn btn-primary">Edit</a>
-                <a href="/Admin/Users/Delete/@Model.User.Id" class="btn btn-danger"
+                <a href="/@Model.Culture/Admin/Users/Edit/@Model.User.Id" class="btn btn-primary">Edit</a>
+                <a href="/@Model.Culture/Admin/Users/Delete/@Model.User.Id" class="btn btn-danger"
                     onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
 
             </div>
@@ -67,7 +67,7 @@
             <div class="mb-3">
                 <h5>Add Role to User</h5>
 
-                <form action="/admin/users/@Model.User.Id/role/addto" method="post">
+                <form action="/@Model.Culture/admin/users/@Model.User.Id/role/addto" method="post">
 
                     <div class="form-group">
                         <label for="role">Select Role</label>

@@ -1,357 +1,454 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using clsCms.Models;
 using clsCMs.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace clsCms.Services
 {
+    /// <summary>
+    /// Provides user- and organization-related operations.
+    ///
+    /// This service acts as a boundary between:
+    /// - ASP.NET Identity data (Users, Roles)
+    /// - Domain-level concepts (Organizations, Memberships)
+    ///
+    /// Intended for both admin and authenticated user scenarios.
+    /// </summary>
     public class UserServices : IUserServices
     {
         private readonly ApplicationDbContext _context;
 
+        /// <summary>
+        /// Initializes the <see cref="UserServices"/>.
+        /// </summary>
         public UserServices(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        /// <summary>
-        /// Get user by id (admin use)
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<UserViewModel> GetUserByIdAsync(string userId)
-        {
-            // Fetch the user and roles from the database
-            var user = await (from u in _context.Users
-                              where u.Id == userId
-                              select new UserViewModel
-                              {
-                                  User = new UserModel
-                                  {
-                                      Id = u.Id,
-                                      UserName = u.UserName,
-                                      Email = u.Email,
-                                      EmailConfirmed = u.EmailConfirmed
-                                  },
-                                  Roles = (from userRole in _context.UserRoles
-                                           join role in _context.Roles on userRole.RoleId equals role.Id
-                                           where userRole.UserId == u.Id
-                                           select role).ToList() // Fetch the user's roles
-                              }).FirstOrDefaultAsync();
+        #region Users (Admin)
 
-            return user;
+        /// <summary>
+        /// Retrieves a single user by ID, including assigned roles.
+        /// Intended for administrative use.
+        /// </summary>
+        public async Task<UserViewModel?> GetUserByIdAsync(string userId)
+        {
+            return await (
+                from u in _context.Users
+                where u.Id == userId
+                select new UserViewModel
+                {
+                    User = new UserModel
+                    {
+                        Id = u.Id,
+                        UserName = u.UserName,
+                        Email = u.Email,
+                        EmailConfirmed = u.EmailConfirmed
+                    },
+                    Roles =
+                        (from ur in _context.UserRoles
+                         join r in _context.Roles on ur.RoleId equals r.Id
+                         where ur.UserId == u.Id
+                         select r).ToList()
+                }
+            ).FirstOrDefaultAsync();
         }
 
         /// <summary>
-        /// Get users. (admin use)
+        /// Retrieves a paginated list of users with role information.
+        /// Intended for administrative dashboards.
         /// </summary>
-        /// <param name="currentPage"></param>
-        /// <param name="itemsPerPage"></param>
-        /// <param name="keyword"></param>
-        /// <param name="sort"></param>
-        /// <returns></returns>
-        public async Task<PaginationModel<UserViewModel>> GetUsersAsync(int currentPage, int itemsPerPage, string keyword = null, string sort = null)
+        public async Task<PaginationModel<UserViewModel>> GetUsersAsync(
+            int currentPage,
+            int itemsPerPage,
+            string? keyword = null,
+            string? sort = null,
+            bool fetchOnlyEmailConfirmed = true)
         {
-            // Start with the base query for users
-            var query = from user in _context.Users
-                        select new
-                        {
-                            user.Id,
-                            user.UserName,
-                            user.Email,
-                            Roles = (from userRole in _context.UserRoles
-                                     join role in _context.Roles on userRole.RoleId equals role.Id
-                                     where userRole.UserId == user.Id
-                                     select role).ToList() // Fetch IdentityRole for each user
-                        };
-
-            // Filter by keyword if provided (search by username or email)
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                query = query.Where(u => u.UserName.Contains(keyword) || u.Email.Contains(keyword));
-            }
-
-            // Apply sorting if provided
-            if (!string.IsNullOrEmpty(sort))
-            {
-                query = sort switch
+            // -----------------------------------------
+            // Base query
+            // -----------------------------------------
+            var query =
+                from u in _context.Users
+                select new
                 {
-                    "username_asc" => query.OrderBy(u => u.UserName),
-                    "username_desc" => query.OrderByDescending(u => u.UserName),
-                    _ => query.OrderBy(u => u.UserName) // Default sorting by username
+                    u.Id,
+                    u.UserName,
+                    u.Email,
+                    u.EmailConfirmed,
+                    Roles =
+                        (from ur in _context.UserRoles
+                         join r in _context.Roles on ur.RoleId equals r.Id
+                         where ur.UserId == u.Id
+                         select r).ToList()
                 };
+
+            // -----------------------------------------
+            // Filtering
+            // -----------------------------------------
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(u =>
+                    u.UserName.Contains(keyword) ||
+                    u.Email.Contains(keyword));
             }
 
-            // Get total items before pagination
+            if (fetchOnlyEmailConfirmed)
+            {
+                query = query.Where(u => u.EmailConfirmed);
+            }
+
+            // -----------------------------------------
+            // Sorting
+            // -----------------------------------------
+            query = sort switch
+            {
+                "username_desc" => query.OrderByDescending(u => u.UserName),
+                _ => query.OrderBy(u => u.UserName)
+            };
+
+            // -----------------------------------------
+            // Pagination
+            // -----------------------------------------
             var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)itemsPerPage);
 
-            // Calculate total pages based on the number of items per page
-            var totalPages = (int)System.Math.Ceiling(totalItems / (double)itemsPerPage);
-
-            // Apply pagination and fetch users with roles
             var users = await query
                 .Skip((currentPage - 1) * itemsPerPage)
                 .Take(itemsPerPage)
                 .ToListAsync();
 
-            // Map the result into UserViewModel
-            var userViewModels = users.Select(u => new UserViewModel
+            var result = users.Select(u => new UserViewModel
             {
                 User = new UserModel
                 {
                     Id = u.Id,
                     UserName = u.UserName,
-                    Email = u.Email
+                    Email = u.Email,
+                    EmailConfirmed = u.EmailConfirmed
                 },
-                Roles = u.Roles // List of IdentityRole for the user
+                Roles = u.Roles
             }).ToList();
 
-            // Return paginated result with user and role information
-            return new PaginationModel<UserViewModel>(userViewModels, currentPage, itemsPerPage, totalItems, totalPages)
+            return new PaginationModel<UserViewModel>(
+                result,
+                currentPage,
+                itemsPerPage,
+                totalItems,
+                totalPages)
             {
                 Keyword = keyword,
                 Sort = sort
             };
         }
 
-        #region Organization
+        #endregion
+
+        #region Organizations
 
         /// <summary>
-        /// Get organization by id
+        /// Retrieves an organization by its identifier.
         /// </summary>
-        /// <param name="organizationId"></param>
-        /// <returns></returns>
-        public async Task<OrganizationModel> GetOrganizationByIdAsync(string organizationId)
+        public async Task<OrganizationModel?> GetOrganizationByIdAsync(string organizationId)
         {
             return await _context.Organizations.FindAsync(organizationId);
         }
 
         /// <summary>
-        /// Get organization view by id
+        /// Retrieves a paginated list of organizations.
+        /// Optionally filtered by user membership.
         /// </summary>
-        /// <returns></returns>
-        public async Task<OrganizationViewModel> GetOrganizationViewByIdAsync(string organizationId)
+        public PaginationModel<OrganizationModel> GetOrganizations(
+            string keyword,
+            string sort,
+            int currentPage,
+            int itemsPerPage,
+            string? userId)
         {
-            var organizationView = await (from o in _context.Organizations
-                                          where o.OrganizationId == organizationId
-                                          select new OrganizationViewModel
-                                          {
-                                              Organization = o,
-                                              Members = (from m in _context.Memberships
-                                                         where m.OrganizationId == o.OrganizationId
-                                                         select m).ToList()
-                                          }).FirstOrDefaultAsync();
-            return organizationView;
-        }
+            IQueryable<OrganizationModel> query =
+                _context.Organizations.AsNoTracking();
 
-        /// <summary>
-        /// Retrieves a list of organizations the user is a member of, with optional filtering and sorting.
-        /// </summary>
-        /// <param name="userId">The ID of the user whose organizations are being fetched.</param>
-        /// <param name="keyword">An optional keyword for filtering organizations by name or description.</param>
-        /// <param name="sort">An optional sort parameter to define the sorting order.</param>
-        /// <returns>A list of organizations with their details and members.</returns>
-        public async Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(string userId,
-            string? keyword, string? sort)
-        {
-            // Validate userId.
-            if (string.IsNullOrEmpty(userId))
+            // -----------------------------------------
+            // Filter by membership
+            // -----------------------------------------
+            if (!string.IsNullOrEmpty(userId))
             {
-                throw new ArgumentException("UserId is required", nameof(userId));
+                query = query.Where(o =>
+                    _context.Memberships.Any(m =>
+                        m.OrganizationId == o.OrganizationId &&
+                        m.UserId == userId));
             }
 
-            var myOrganizations = from m in _context.Organizations
-                                  join o in _context.Memberships on m.OrganizationId equals o.OrganizationId
-                                  where o.UserId == userId
-                                  select new OrganizationViewModel
-                                  {
-                                      Organization = m,
-                                      Members = (from mm in _context.Memberships
-                                                 where mm.OrganizationId == m.OrganizationId
-                                                 select mm).ToList()
-                                  };
-
-            // Filter and sort.
-            if (!string.IsNullOrEmpty(keyword))
+            // -----------------------------------------
+            // Keyword search
+            // -----------------------------------------
+            if (!string.IsNullOrWhiteSpace(keyword))
             {
-                myOrganizations = myOrganizations
-                    .Where(o => o.Organization.OrganizationName.ToLower().Contains(keyword.ToLower()) ||
-                                o.Organization.OrganizationDescription.ToLower().Contains(keyword.ToLower()));
+                query = query.Where(o =>
+                    o.OrganizationName!.Contains(keyword));
             }
 
-            // Apply sorting based on the provided sort parameter.
-            myOrganizations = sort switch
+            // -----------------------------------------
+            // Sorting
+            // -----------------------------------------
+            query = sort switch
             {
-                "name_asc" => myOrganizations.OrderBy(o => o.Organization.OrganizationName),
-                "name_desc" => myOrganizations.OrderByDescending(o => o.Organization.OrganizationName),
-                "created_asc" => myOrganizations.OrderBy(o => o.Organization.Created),
-                "created_desc" => myOrganizations.OrderByDescending(o => o.Organization.Created),
-                _ => myOrganizations.OrderByDescending(o => o.Organization.Created) // Default sorting: by creation date descending.
+                "name-desc" => query.OrderByDescending(o => o.OrganizationName),
+                "created-asc" => query.OrderBy(o => o.Created),
+                "created-desc" => query.OrderByDescending(o => o.Created),
+                _ => query.OrderBy(o => o.OrganizationName)
             };
 
-            // Execute the query and return the results as a list.
-            return await myOrganizations.ToListAsync();
+            // -----------------------------------------
+            // Pagination
+            // -----------------------------------------
+            var totalItems = query.Count();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)itemsPerPage);
+
+            var items = query
+                .Skip((currentPage - 1) * itemsPerPage)
+                .Take(itemsPerPage)
+                .ToList();
+
+            return new PaginationModel<OrganizationModel>(
+                items,
+                currentPage,
+                itemsPerPage,
+                totalItems,
+                totalPages)
+            {
+                Keyword = keyword,
+                Sort = sort
+            };
         }
 
         /// <summary>
-        /// Upsert organization
+        /// Retrieves an organization with its members.
         /// </summary>
-        /// <param name="organization"></param>
-        /// <returns></returns>
+        public async Task<OrganizationViewModel?> GetOrganizationViewByIdAsync(string organizationId)
+        {
+            if (string.IsNullOrWhiteSpace(organizationId))
+                throw new ArgumentException("Organization ID is required.", nameof(organizationId));
+
+            return await _context.Organizations
+                .Where(o => o.OrganizationId == organizationId)
+                .Select(o => new OrganizationViewModel
+                {
+                    Organization = o,
+                    Members =
+                        _context.Memberships
+                            .Where(m => m.OrganizationId == o.OrganizationId)
+                            .Join(
+                                _context.Users,
+                                m => m.UserId,
+                                u => u.Id,
+                                (m, u) => new OrganizationMemberViewModel
+                                {
+                                    Member = m,
+                                    User = u
+                                })
+                            .ToList()
+                })
+                .SingleOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Retrieves all organizations the user belongs to.
+        /// Used for dashboards and navigation.
+        /// </summary>
+        public async Task<List<OrganizationViewModel>> GetMyOrganizationsAsync(
+            string userId,
+            string? keyword,
+            string? sort)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("UserId is required.", nameof(userId));
+
+            var query =
+                _context.Organizations
+                    .Where(o =>
+                        _context.Memberships.Any(m =>
+                            m.OrganizationId == o.OrganizationId &&
+                            m.UserId == userId))
+                    .Select(o => new OrganizationViewModel
+                    {
+                        Organization = o,
+                        Members =
+                            _context.Memberships
+                                .Where(m => m.OrganizationId == o.OrganizationId)
+                                .Join(
+                                    _context.Users,
+                                    m => m.UserId,
+                                    u => u.Id,
+                                    (m, u) => new OrganizationMemberViewModel
+                                    {
+                                        Member = m,
+                                        User = u
+                                    })
+                                .ToList()
+                    });
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var k = keyword.ToLower();
+                query = query.Where(o =>
+                    o.Organization.OrganizationName.ToLower().Contains(k) ||
+                    o.Organization.OrganizationDescription.ToLower().Contains(k));
+            }
+
+            query = sort switch
+            {
+                "name_asc" => query.OrderBy(o => o.Organization.OrganizationName),
+                "name_desc" => query.OrderByDescending(o => o.Organization.OrganizationName),
+                "created_asc" => query.OrderBy(o => o.Organization.Created),
+                _ => query.OrderByDescending(o => o.Organization.Created)
+            };
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Creates or updates an organization.
+        /// Automatically assigns the creator as Owner on creation.
+        /// </summary>
         public async Task<OrganizationModel> UpsertOrganizationAsync(OrganizationModel organization)
         {
-            var original = await GetOrganizationByIdAsync(organization.OrganizationId);
+            var existing = await GetOrganizationByIdAsync(organization.OrganizationId);
 
-            if (original == null)
+            if (existing == null)
             {
                 organization.Created = DateTimeOffset.UtcNow;
                 organization.Updated = DateTimeOffset.UtcNow;
 
-                // New
                 _context.Organizations.Add(organization);
 
-                // Add the user as the owner
-                var user = _context.Users.Find(organization.CreatedBy);
-
-                if (user != null)
+                var creator = _context.Users.Find(organization.CreatedBy);
+                if (creator != null)
                 {
-                    var member = new OrganizationMemberModel
+                    _context.Memberships.Add(new OrganizationMemberModel
                     {
                         MemberId = Guid.NewGuid().ToString(),
                         OrganizationId = organization.OrganizationId,
-                        UserId = user.Id,
+                        UserId = creator.Id,
                         Role = "Owner",
                         Status = "Active",
                         Created = DateTimeOffset.UtcNow,
                         Updated = DateTimeOffset.UtcNow,
                         Joined = DateTimeOffset.UtcNow
-                    };
+                    });
 
-                    _context.Memberships.Add(member);
-
-                    if (string.IsNullOrEmpty(user.OrganizationId))
+                    if (string.IsNullOrEmpty(creator.OrganizationId))
                     {
-                        user.OrganizationId = organization.OrganizationId;
-
-                        _context.Users.Update(user);
+                        creator.OrganizationId = organization.OrganizationId;
+                        _context.Users.Update(creator);
                     }
                 }
 
                 await _context.SaveChangesAsync();
-
                 return organization;
             }
 
-            original.OrganizationName = organization.OrganizationName;
-            original.OrganizationType = organization.OrganizationType;
-            original.OrganizationDescription = organization.OrganizationDescription;
-            original.OrganizationLogo = organization.OrganizationLogo;
-            original.OrganizationWebsite = organization.OrganizationWebsite;
-            original.OrganizationEmail = organization.OrganizationEmail;
-            original.OrganizationPhone = organization.OrganizationPhone;
-            original.OrganizationAddress = organization.OrganizationAddress;
-            original.OrganizationCity = organization.OrganizationCity;
-            original.OrganizationState = organization.OrganizationState;
-            original.OrganizationCountry = organization.OrganizationCountry;
-            original.Updated = DateTimeOffset.UtcNow;
+            // Update existing
+            existing.OrganizationName = organization.OrganizationName;
+            existing.OrganizationType = organization.OrganizationType;
+            existing.OrganizationDescription = organization.OrganizationDescription;
+            existing.OrganizationLogo = organization.OrganizationLogo;
+            existing.OrganizationWebsite = organization.OrganizationWebsite;
+            existing.OrganizationEmail = organization.OrganizationEmail;
+            existing.OrganizationPhone = organization.OrganizationPhone;
+            existing.OrganizationAddress = organization.OrganizationAddress;
+            existing.OrganizationCity = organization.OrganizationCity;
+            existing.OrganizationState = organization.OrganizationState;
+            existing.OrganizationCountry = organization.OrganizationCountry;
+            existing.Updated = DateTimeOffset.UtcNow;
 
-            // Upsert
-            _context.Organizations.Update(original);
+            _context.Organizations.Update(existing);
             await _context.SaveChangesAsync();
 
-            return original;
+            return existing;
         }
 
         /// <summary>
-        /// Upsert membership
+        /// Creates or updates an organization membership.
         /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
-        public async Task<OrganizationMemberModel> UpsertOrganizationMemberAsync(OrganizationMemberModel member)
+        public async Task<OrganizationMemberModel> UpsertOrganizationMemberAsync(
+            OrganizationMemberModel member)
         {
-            var original = await (from m in _context.Memberships
-                                  where m.MemberId == member.MemberId
-                                  select m).FirstOrDefaultAsync();
+            var existing =
+                await _context.Memberships
+                    .FirstOrDefaultAsync(m => m.MemberId == member.MemberId);
 
-            if (original == null)
+            if (existing == null)
             {
-                // New
+                member.Created = DateTimeOffset.UtcNow;
+                member.Updated = DateTimeOffset.UtcNow;
+
                 _context.Memberships.Add(member);
                 await _context.SaveChangesAsync();
 
                 return member;
             }
 
-            // Upsert
+            member.Updated = DateTimeOffset.UtcNow;
             _context.Memberships.Update(member);
             await _context.SaveChangesAsync();
 
-            return original;
+            return existing;
         }
 
         #endregion
 
-        #region login link
+        #region Login links
 
         /// <summary>
-        /// Issue login link
+        /// Issues a one-time login link for passwordless authentication.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
         public async Task<LoginLinkModel> IssueLoginLinkAsync(string userId)
         {
-            var loginLink = new LoginLinkModel
+            var link = new LoginLinkModel
             {
                 UserId = userId,
                 LinkId = Guid.NewGuid().ToString(),
                 Expire = DateTimeOffset.UtcNow.AddHours(1)
             };
 
-            _context.LoginLinks.Add(loginLink);
-
+            _context.LoginLinks.Add(link);
             await _context.SaveChangesAsync();
 
-            return loginLink;
+            return link;
         }
 
         /// <summary>
-        /// Consume login link
+        /// Consumes and invalidates a login link.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="linkId"></param>
-        /// <returns></returns>
         public async Task<bool> ConsumeLoginLinkAsync(string userId, string linkId)
         {
-            var original = await (from l in _context.LoginLinks
-                                  where l.UserId == userId && l.LinkId == linkId
-                                  select l).FirstOrDefaultAsync();
+            var link =
+                await _context.LoginLinks
+                    .FirstOrDefaultAsync(l =>
+                        l.UserId == userId &&
+                        l.LinkId == linkId);
 
-            if(original == null)
-            {
+            if (link == null)
                 return false;
-            }
 
-            _context.LoginLinks.Remove(original);
-
+            _context.LoginLinks.Remove(link);
             await _context.SaveChangesAsync();
 
             return true;
         }
 
         /// <summary>
-        /// Clean expired login link
+        /// Removes expired login links.
+        /// Intended to be run by background jobs.
         /// </summary>
-        /// <returns></returns>
         public async Task CleanExpiredLoginLinkAsync()
         {
-            var expiredLinks = from l in _context.LoginLinks
-                               where l.Expire < DateTimeOffset.UtcNow
-                               select l;
+            var expired =
+                _context.LoginLinks
+                    .Where(l => l.Expire < DateTimeOffset.UtcNow);
 
-            _context.LoginLinks.RemoveRange(expiredLinks);
-
+            _context.LoginLinks.RemoveRange(expired);
             await _context.SaveChangesAsync();
         }
 

@@ -17,32 +17,47 @@ namespace wppCms.Areas.Usr.Controllers
     {
         private readonly IArticleServices _articleServices;
         private readonly IAuthorServices _authorServices;
+        private readonly IUserServices _userServices;
         private readonly AppConfigModel _appConfig;
 
         public HomeController(UserManager<UserModel> userManager,
         IChannelServices channelServices, IArticleServices articleServices,
-            IAuthorServices authoerServices,
+            IAuthorServices authoerServices, IUserServices userServices,
             IOptions<AppConfigModel> appConfig) : base(userManager, channelServices)
         {
             _articleServices = articleServices;
             _authorServices = authoerServices;
+            _userServices = userServices;
             _appConfig = appConfig.Value;
         }
 
         [Route("/{culture}/usr")]
-        public async Task<IActionResult> Index(string culture, string keyword, string sort, int currentPage = 1, int itemsPerPage = 300)
+        public async Task<IActionResult> Index(string culture,  
+            string keyword, string sort, string? organizationId, int currentPage = 1, int itemsPerPage = 300)
         {
             // Get user info.
             var user = await GetAuthenticatedUserAsync();
-
-            if (string.IsNullOrEmpty(user.OrganizationId))
+            
+            // If organizationId is not set, then retrieve from user's organization Id
+            if (string.IsNullOrEmpty(organizationId))
             {
-                return RedirectToAction("Index", "Organization", new { @area = "Usr", @culture = culture });
+                if (string.IsNullOrEmpty(user.OrganizationId))
+                {
+                    // If you have no organization preference set
+                    // Then show list of organizations that you belong to.
+                    return RedirectToAction("Index", "Organization", new { @area = "Usr", @culture = culture });
+                }
+                
+                // Else just set.
+                organizationId = user.OrganizationId;
             }
+
+            // You want to make sure you are the member of this organizaitons
+            var channels = await _channelServices.GetChannelsByUserIdAndOrganizationIdAsync(organizationId, user.Id, keyword, sort, currentPage, itemsPerPage);
 
             var view = new UsrHomeIndexViewModel()
             {
-                Channels = await _channelServices.GetChannelsByUserIdAndOrganizationIdAsync(user.OrganizationId, user.Id, keyword, sort, currentPage, itemsPerPage),
+                Channels = channels,
                 Culture = culture,
                 GaTagId = _appConfig.Ga.TagId,
                 FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
@@ -77,7 +92,7 @@ namespace wppCms.Areas.Usr.Controllers
         [HttpPost]
         [Route("/{culture}/usr/channel/{channelId}/update")]
         public async Task<IActionResult> UpdateChannel(string culture, string channelId, string title,
-       string permaName, string description, string publicCss, bool isPublic, bool isTopPageStaticPage, 
+       string permaName, string description, string publicCss, bool isPublic, bool isTopPageStaticPage,
        string? topPagePermaName, string? defaultCulture)
         {
             var user = await GetAuthenticatedUserAsync();
@@ -152,6 +167,8 @@ namespace wppCms.Areas.Usr.Controllers
 
             var authors = await _authorServices.ListAuthorsByChannelAsync(channel.Channel.Id);
 
+            var folders = await _articleServices.GetFolderFacetsAsync(channel.Channel.Id, true);
+
             channel.Authors = authors;
 
             // Build the view model
@@ -160,7 +177,8 @@ namespace wppCms.Areas.Usr.Controllers
                 Channel = channel,
                 Culture = culture,
                 GaTagId = _appConfig.Ga.TagId,
-                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl
+                FontAwsomeUrl = _appConfig.FontAwsome.KitUrl,
+                Folders = folders,
             };
 
             return View(viewModel); // Render the view with channel and articles

@@ -1,0 +1,102 @@
+@using wppCms.Areas.Admin.Models
+@model AdminChannelsIndexViewModel
+
+@{
+    ViewData["Title"] = "Channels";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <h1>Manage Channels</h1>
+        </div>
+        <div>
+        </div>
+    </div>
+
+
+    <!-- Search form -->
+    <form method="get" class="my-2">
+        <div class="my-1">
+            <input type="text" name="keyword" class="form-control" placeholder="Search..." value="@Model.Channels.Keyword" />
+        </div>
+        <div class="my-1">
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    <!-- Sort options -->
+    <div class="mb-3">
+        <a href="?sort=username_asc&keyword=@Model.Channels.Keyword" class="btn btn-link">Sort by Username Ascending</a>
+        <a href="?sort=username_desc&keyword=@Model.Channels.Keyword" class="btn btn-link">Sort by Username Descending</a>
+    </div>
+
+    <!-- Users table -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>IsPublic</th>
+                <th>Created</th>
+                <th>ArticleCounts</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var channel in Model.Channels.Items)
+            {
+                <tr>
+                    <td>
+                        <a href="/@Model.Culture/admin/channel/@channel.Id">
+                            @channel.Id
+                        </a>
+                    </td>
+                    <td>@channel.Title</td>
+                    <td>@channel.IsPublic</td>
+                    <td>@channel.Created</td>
+                   
+                    <td>
+                        @channel.ArticleCount
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination controls -->
+    <nav>
+        <div class="d-flex flex-wrap">
+            @for (var i = 1; i <= Model.Channels.TotalPages; i++)
+            {
+                if (Model.Channels.CurrentPage == i)
+                {
+                    <div class="m-1">
+                        <button disabled class="btn btn-sm btn-secondary"
+                                href="?page=@i&itemsPerPage=@Model.Channels.ItemsPerPage&keyword=@Model.Channels.Keyword&sort=@Model.Channels.Sort">
+                            @i
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="m-1">
+                        <a class="btn btn-sm btn-primary"
+                           href="?page=@i&itemsPerPage=@Model.Channels.ItemsPerPage&keyword=@Model.Channels.Keyword&sort=@Model.Channels.Sort">@i</a>
+
+                    </div>
+                }
+            }
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,76 @@
+@using wppCms.Areas.Admin.Models
+@model AdminUsersOrganizationMemberViewModel
+
+@{
+    ViewData["Title"] = "Member";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Organizations</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/organization/@Model.Organization.Organization.OrganizationId">@Model.Organization.Organization.OrganizationName</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6 my-2">
+            <form action="/@Model.Culture/admin/organization/@Model.Organization.Organization.OrganizationId/member/upsert" method="post">
+                @Html.AntiForgeryToken()
+                <div class="py-2">
+                    <label>MemberId</label>
+                    <input type="text" class="form-control" name="MemberId" value="@Model.OrganizationMember.MemberId" />
+                </div>
+                <div class="py-2">
+                    <label>OrganizationId</label>
+                    <input type="text" class="form-control" name="OrganizationId" value="@Model.OrganizationMember.OrganizationId" />
+                </div>
+                <div class="py-2">
+                    <label>UserId</label>
+                    <input type="text" class="form-control" name="UserId" value="@Model.OrganizationMember.UserId" />
+                </div>
+                <div class="py-2">
+                    <label>Role</label>
+                    <input type="text" class="form-control" name="Role" value="@Model.OrganizationMember.Role" />
+                </div>
+                <div class="py-2">
+                    <label>Status</label>
+                    <input type="text" class="form-control" name="Status" value="@Model.OrganizationMember.Status" />
+                </div>
+
+                <div class="py-2">
+                    <label>Joined</label>
+                    <input type="text" class="form-control" name="Joined" value="@Model.OrganizationMember.Joined" />
+                </div>
+                <div class="py-2">
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6 my-2">
+            <table class="table">
+                <tr>
+                    <td>
+                        Created
+                    </td>
+                    <td>
+                        @Model.OrganizationMember.Created
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Updated
+                    </td>
+                    <td>
+                        @Model.OrganizationMember.Updated
+                    </td>
+                </tr>
+                
+            </table>
+        </div>
+    </div>
+   
+</div>

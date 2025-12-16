@@ -7,7 +7,7 @@ using wppCms.Areas.Admin.Models;
 
 namespace wppCms.Areas.Admin.Controllers
 {
-    [Authorize()]
+    [Authorize(Roles = "admin")]
     [Area("Admin")]
     public class HomeController : Controller
     {

@@ -38,7 +38,8 @@ namespace wppCms.Areas.Usr.Controllers
         }
 
         [Route("/{culture}/usr/channel/{channelId}/_articles")]
-        public async Task<IActionResult> _Articles(string culture, string channelId, string keyword, string sort = "publishdate_desc",
+        public async Task<IActionResult> _Articles(string culture, string channelId, 
+            string keyword, string sort = "publishdate_desc", string folderPath = "",
             int currentPage = 1, int itemsPerPage = 100)
         {
             // Fetch the list of articles for the channel
@@ -47,13 +48,15 @@ namespace wppCms.Areas.Usr.Controllers
                 searchQuery: keyword,
                 currentPage: currentPage,
                 itemsPerPage: itemsPerPage,
+                folder: folderPath,
                 sort: sort, isPublishDateSensitive: false);
 
             var view = new UsrArticles_ArticlesViewModel()
             {
                 Articles = articles,
                 ChannelId = channelId,
-                Culture = culture
+                Culture = culture,
+                Folder = folderPath
             };
 
             return PartialView(view);

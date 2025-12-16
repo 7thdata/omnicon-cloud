@@ -9,17 +9,29 @@
 <div class="container-fluid mt-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin">Admin</a></li>
+            <li class="breadcrumb-item"><a href="/@Model.Culture/admin/users">Users</a></li>
             <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
         </ol>
     </nav>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <h1>Manage Roles</h1>
-<hr/>
+
+
+
+    <hr />
     <div class="row">
         <div class="col-md-6">
             <!-- Add New Role -->
-            <form action="/admin/users/role/add" method="post">
+            <form action="/@Model.Culture/admin/users/role/add" method="post">
 
                 <label>Role Name</label>
 

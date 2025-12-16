@@ -144,7 +144,8 @@
                                     </select>
                                     <!-- Submit Button -->
                                     <button class="btn btn-primary" type="submit">
-                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <i class="bi bi-search"></i>
+
                                     </button>
                                 </div>
                             </form>
@@ -251,7 +252,8 @@
                                     {
                                         <div class="py-1">
                                             <a href="/@Model.Culture/c/@Model.Channel.Channel.PermaName?keyword=@Model.Keyword&folder=@folder.Value" class="btn btn-light btn-sm">
-                                                <i class="fa-solid fa-folder"></i> @folder.Value
+                                                <i class="bi bi-folder-fill"></i>
+                                                @folder.Value
                                                 <span class="badge bg-primary">@folder.Count</span>
                                             </a>
                                         </div>
@@ -270,7 +272,7 @@
 
                                     @foreach (var author in Model.Channel.Authors)
                                     {
-                                        <div class="d-flex my-2">
+                                        <div class="d-flex my-4">
                                             <div class="profile-image-container-small pe-2">
                                                 @if (!string.IsNullOrEmpty(author.ProfileImageUrl))
                                                 {

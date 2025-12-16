@@ -30,35 +30,36 @@
                     @if (Model.Channel.Channel.IsPublic)
                     {
                         <a class="btn btn-secondary" href="/@Model.Culture/c/@Model.Channel.Channel.PermaName" target="_blank">
-                            <i class="fa-solid fa-desktop fa-fw"></i>
+                            <i class="bi bi-pc-display"></i>
                         </a>
                     }
                     else
                     {
                         <span class="btn btn-secondary">
-                            <i class="fa-solid fa-display-slash fa-fw"></i>
+                            <i class="bi bi-display position-relative"></i>
+                            <span class="position-absolute top-50 start-50 translate-middle text-danger">/</span>
                         </span>
                     }
                 </div>
                 <div class="x-1">
                     <a class="btn btn-secondary" href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id" target="_blank">
-                        <i class="fa-solid fa-rectangle-ad fa-fw"></i>
+                        <i class="bi bi-badge-ad"></i>
                     </a>
                 </div>
             </div>
-          
+
             <!-- Edit and Delete Buttons for the Channel -->
             <div class="d-flex justify-content-end">
                 <div class="mx-1">
                     <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/edit" class="btn btn-primary">
-                        <i class="fa-solid fa-pen-to-square fa-fw"></i>
+                        <i class="bi bi-pencil-square"></i>
                     </a>
                 </div>
                 <div class="mx-1">
                     <form action="/@Model.Culture/usr/channel/delete/@Model.Channel.Channel.Id" method="post"
                           onsubmit="return confirm('Warning: Deleting this channel will make it inaccessible to all members, including yourself. Articles belonging to this channel will also no longer be accessible. Additionally, this channel will no longer be available through the API. Are you sure you want to proceed?');">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fa-solid fa-trash fa-fw"></i>
+                            <i class="bi bi-trash-fill"></i>
                         </button>
                     </form>
                 </div>
@@ -178,26 +179,37 @@
                     <form id="searchForm" class="d-flex me-3">
                         <div class="input-group">
                             <input type="text" id="searchKeyword" class="form-control" placeholder="Search articles..." />
+
+                            @if (Model.Folders != null)
+                            {
+
+                                <!--Filter by Path-->
+                                <select id="filterPath" class="form-select">
+                                    <option value="">Filter By</option>
+                                    @foreach (var folder in Model.Folders)
+                                    {
+                                        <option value="@folder">@folder</option>
+                                    }
+                                </select>
+                            }
+
+                            <select id="sortSelector" class="form-select">
+                                <option value="">Sort by</option>
+                                <option value="title_asc">Title (A-Z)</option>
+                                <option value="title_desc">Title (Z-A)</option>
+                                <option value="publishdate_asc">Publish Date (Oldest First)</option>
+                                <option value="publishdate_desc">Publish Date (Newest First)</option>
+                            </select>
+
                             <button type="button" id="searchButton" class="btn btn-secondary">
-                                <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                                <i class="bi bi-search"></i>
                             </button>
                         </div>
                     </form>
 
-                    <!-- Sort Dropdown -->
-                    <div class="me-3">
-                        <select id="sortSelector" class="form-select">
-                            <option value="">Sort by</option>
-                            <option value="title_asc">Title (A-Z)</option>
-                            <option value="title_desc">Title (Z-A)</option>
-                            <option value="publishdate_asc">Publish Date (Oldest First)</option>
-                            <option value="publishdate_desc">Publish Date (Newest First)</option>
-                        </select>
-                    </div>
-
                     <!-- Button to Create New Article -->
                     <a href="/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/article/create" class="btn btn-primary">
-                        <i class="fa-solid fa-plus fa-fw"></i>
+                        <i class="bi bi-plus"></i>
                     </a>
                 </div>
             </div>
@@ -215,16 +227,17 @@
             const $searchKeyword = $("#searchKeyword");
             const $searchButton = $("#searchButton");
             const $sortSelector = $("#sortSelector");
+            const $filterPath = $("#filterPath");
 
-            // Function to load articles with optional search and sort
-            function loadArticles(keyword = "", sort = "") {
-                // Show a loading message
+            // Function to load articles with filters
+            function loadArticles(keyword = "", sort = "", folderPath = "") {
                 $articlesContainer.html("<p>Loading articles...</p>");
 
-                // Prepare the URL with query parameters
-                const url = `/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/_articles?keyword=${encodeURIComponent(keyword)}&sort=${encodeURIComponent(sort)}`;
+                const url = `/@Model.Culture/usr/channel/@Model.Channel.Channel.Id/_articles` +
+                    `?keyword=${encodeURIComponent(keyword)}` +
+                    `&sort=${encodeURIComponent(sort)}` +
+                    `&folderPath=${encodeURIComponent(folderPath)}`;
 
-                // Load the articles dynamically
                 $articlesContainer.load(url, function (response, status, xhr) {
                     if (status === "error") {
                         $articlesContainer.html(`<p class="text-danger">Failed to load articles: ${xhr.statusText}</p>`);
@@ -232,30 +245,23 @@
                 });
             }
 
-            // Initial load without filters
+            // Initial load
             loadArticles();
 
-            // Handle search button click
+            // Search button click
             $searchButton.on("click", function () {
                 const keyword = $searchKeyword.val().trim();
-                const sort = $sortSelector.val(); // Get the selected sort value
-                loadArticles(keyword, sort);
+                const sort = $sortSelector.val();
+                const folderPath = $filterPath.length ? $filterPath.val() : "";
+
+                loadArticles(keyword, sort, folderPath);
             });
 
-            // Handle sort change
-            $sortSelector.on("change", function () {
-                const sort = $(this).val();
-                const keyword = $searchKeyword.val().trim(); // Get the current search keyword
-                loadArticles(keyword, sort);
-            });
-
-            // Optional: Handle Enter key in the search input
+            // Optional: trigger search on Enter key
             $searchKeyword.on("keypress", function (e) {
                 if (e.which === 13) {
-                    e.preventDefault(); // Prevent form submission
-                    const keyword = $searchKeyword.val().trim();
-                    const sort = $sortSelector.val(); // Get the selected sort value
-                    loadArticles(keyword, sort);
+                    e.preventDefault();
+                    $searchButton.click();
                 }
             });
         });

@@ -1,47 +1,158 @@
 @using wppCms.Areas.Usr.Models
 @model UsrUserManagementIndexViewModel
+
 @{
     Layout = "~/Areas/Usr/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Profile";
 }
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-4 my-2">
-            <h2>Your Profile</h2>
+<div class="container my-5">
 
-            <!-- Display password change success message if available -->
-            @if (TempData["PasswordChangeSuccessMessage"] != null)
-            {
-                <div class="alert alert-success">
-                    @TempData["PasswordChangeSuccessMessage"]
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-person-circle me-2"></i>
+            Profile
+        </h1>
+        <p class="text-muted mb-0">
+            Manage your personal information and account settings.
+        </p>
+    </div>
+
+    <!-- TempData Messages -->
+    @if (TempData["PasswordChangeSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["PasswordChangeSuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["EmailChangeSuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["EmailChangeSuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- Profile Info -->
+        <div class="col-lg-6">
+            <div class="card border">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-person me-2"></i>
+                    Personal Information
                 </div>
-            }
 
-            @if (TempData["EmailChangeSuccessMessage"] != null)
-            {
-                <div class="alert alert-success">
-                    @TempData["EmailChangeSuccessMessage"]
+                <div class="card-body">
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">Display Name</dt>
+                        <dd class="col-sm-8 fw-semibold">
+                            @Model.User.NickName
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Email</dt>
+                        <dd class="col-sm-8">
+                            @Model.User.Email
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Joined</dt>
+                        <dd class="col-sm-8">
+                            @Model.User.CreatedOn.ToString("yyyy.MM.dd")
+                        </dd>
+                    </dl>
+
+                    @if (Model.Roles?.Any() == true)
+                    {
+                        <hr />
+                        <div class="mb-2 text-muted small">Roles</div>
+                        <div class="d-flex flex-wrap">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge text-bg-primary me-1 mb-1">
+                                    @role
+                                </span>
+                            }
+                        </div>
+                    }
+
                 </div>
-            }
-
-            <p><strong>Display Name:</strong> @Model.User.NickName</p>
-            <p><strong>Email:</strong> @Model.User.Email</p>
-            <p><strong>Joined:</strong> @Model.User.CreatedOn</p>
-
-            <div class="py-4">
-                <a href="/@Model.Culture/usr/update-profile" class="m-1 btn btn-secondary">Update Profile</a>
-                <a href="/@Model.Culture/usr/change-password" class="m-1 btn btn-secondary">Change Password</a>
-                <a href="/@Model.Culture/usr/change-email" class="m-1 btn btn-secondary">Change Email</a>
             </div>
         </div>
-        <div class="col-md-4 my-2"></div>
-        <div class="col-md-4 my-2">
-            <form action="/Identity/Account/Logout" asp-controller="Account" method="post" class="nav-item">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-secondary" style="text-decoration:none;">Logout</button>
-            </form>
+        <!-- Actions -->
+        <div class="col-lg-6">
+            <div class="card border">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-gear me-2"></i>
+                    Account Actions
+                </div>
+
+                <div class="card-body p-0">
+
+                    <div class="list-group list-group-flush">
+
+                        <a href="/@Model.Culture/usr/update-profile"
+                           class="list-group-item list-group-item-action d-flex align-items-center">
+                            <span class="me-3 text-muted" style="width: 24px;">
+                                <i class="bi bi-pencil-square"></i>
+                            </span>
+                            <span>Update Profile</span>
+                        </a>
+
+                        <a href="/@Model.Culture/usr/change-password"
+                           class="list-group-item list-group-item-action d-flex align-items-center">
+                            <span class="me-3 text-muted" style="width: 24px;">
+                                <i class="bi bi-key"></i>
+                            </span>
+                            <span>Change Password</span>
+                        </a>
+
+                        <a href="/@Model.Culture/usr/change-email"
+                           class="list-group-item list-group-item-action d-flex align-items-center">
+                            <span class="me-3 text-muted" style="width: 24px;">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <span>Change Email</span>
+                        </a>
+
+                    </div>
+
+                    <div class="list-group list-group-flush border-top">
+
+                        <form action="/Identity/Account/Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+
+                            <button type="submit"
+                                    class="list-group-item list-group-item-action d-flex align-items-center text-danger border-0">
+                                <span class="me-3" style="width: 24px;">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </span>
+                                Logout
+                            </button>
+                        </form>
+
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
-   
 </div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.alert').each(function () {
+                const alert = $(this);
+                setTimeout(function () {
+                    alert.alert('close');
+                }, 4000);
+            });
+        });
+    </script>
+}

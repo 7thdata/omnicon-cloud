@@ -77,5 +77,8 @@ namespace clsCMs.Data
         public DbSet<AdCreativePerformanceRecordDailyModel> AdCreativeDailyPerformance { get; set; }
         public DbSet<AdCreativePerformanceRecordHourlyModel> AdCreativeHourlyPerformance { get; set; }
 
+        // Fileshare
+        public DbSet<FilesSharingFileModel> FileSharingFiles { get; set; } // File sharing service
+
     }
 }

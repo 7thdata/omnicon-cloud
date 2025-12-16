@@ -125,7 +125,8 @@ namespace clsCms.Services
      int currentPage = 1,
      int itemsPerPage = 10,
      string sort = "publishdate_desc",
-     string authorPermaName = null,
+     string? authorPermaName = null,
+     string? folder = null,
      bool isPublishDateSensitive = true)
         {
             var articles = new List<ArticleModel>();
@@ -172,6 +173,15 @@ namespace clsCms.Services
                         (a.PermaName != null && a.PermaName.ToLower().Contains(term))))
                     .ToList()
                 : articles;
+
+            if (!string.IsNullOrEmpty(folder))
+            {
+                var folderTrimmed = folder.Trim();
+                filteredArticles = filteredArticles
+                    .Where(a => !string.IsNullOrEmpty(a.Folders) &&
+                                a.Folders.Trim().Equals(folderTrimmed, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
             //
             if (!string.IsNullOrEmpty(authorPermaName))
@@ -222,6 +232,40 @@ namespace clsCms.Services
                 Keyword = searchQuery,
                 Sort = sort
             };
+        }
+
+        /// <summary>
+        /// Get distinct folder facets for a given channel.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="isPublishDateSensitive"></param>
+        /// <returns></returns>
+        public async Task<List<string>> GetFolderFacetsAsync(string channelId, bool isPublishDateSensitive = true)
+        {
+            var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            AsyncPageable<ArticleModel> query;
+
+            if (isPublishDateSensitive)
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(a =>
+                   a.PartitionKey == channelId && a.IsArchived == false && a.PublishSince < DateTimeOffset.Now);
+            }
+            else
+            {
+                query = _articleTable.QueryAsync<ArticleModel>(a =>
+                   a.PartitionKey == channelId && a.IsArchived == false);
+            }
+
+            await foreach (var article in query)
+            {
+                if (!string.IsNullOrWhiteSpace(article.Folders))
+                {
+                    folders.Add(article.Folders.Trim());
+                }
+            }
+
+            return folders.OrderBy(f => f).ToList();
         }
 
         /// <summary>

@@ -59,6 +59,7 @@ builder.Services.AddScoped<ISearchServices, SearchServices>();
 builder.Services.AddScoped<IUserServices, UserServices>();
 builder.Services.AddScoped<IBlobStorageServices, BlobStorageServices>();
 builder.Services.AddScoped<INotificationServices, NotificationServices>();
+builder.Services.AddScoped<IFileSharingServices, FileSharingServices>();
 
 var app = builder.Build();
 

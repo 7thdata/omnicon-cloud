@@ -34,6 +34,7 @@ namespace wppCms.Areas.Usr.Controllers
         public async Task<IActionResult> Index(string culture, string keyword, string sort)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) return NotFound();
 
             var myOrganizations = await _userServices.GetMyOrganizationsAsync(user.Id,keyword,sort);
 
@@ -138,6 +139,61 @@ namespace wppCms.Areas.Usr.Controllers
             TempData["Message"] = "Default organization set successfully.";
 
             return RedirectToAction("Details", new { @culture = culture, @organizationId = organizationId });
+        }
+
+        [HttpPost, AutoValidateAntiforgeryToken]
+        [Route("/{culture}/usr/organization/add-member")]
+        public async Task<IActionResult> AddMember(
+    string culture,
+    string organizationId,
+    string email,
+    string role)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
+
+            // -----------------------------------
+            // Resolve user by email
+            // -----------------------------------
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                TempData["Message"] = "User with this email was not found.";
+                return RedirectToAction("Details", new { culture, organizationId });
+            }
+
+            // -----------------------------------
+            // Prevent duplicate membership
+            // -----------------------------------
+            var organization = await _userServices.GetOrganizationViewByIdAsync(organizationId);
+            if (organization == null) return NotFound();
+
+            if (organization.Members.Any(m => m.Member.UserId == user.Id))
+            {
+                TempData["Message"] = "User is already a member of this organization.";
+                return RedirectToAction("Details", new { culture, organizationId });
+            }
+
+            // -----------------------------------
+            // Create membership
+            // -----------------------------------
+            var member = new OrganizationMemberModel
+            {
+                MemberId = Guid.NewGuid().ToString(),
+                OrganizationId = organizationId,
+                UserId = user.Id,
+                Role = string.IsNullOrEmpty(role) ? "Member" : role,
+                Status = "Active",
+                Created = DateTimeOffset.UtcNow,
+                Updated = DateTimeOffset.UtcNow,
+                Joined = DateTimeOffset.UtcNow
+            };
+
+            await _userServices.UpsertOrganizationMemberAsync(member);
+
+            TempData["Message"] = "Member added successfully.";
+
+            return RedirectToAction("Details", new { culture, organizationId });
         }
     }
 }

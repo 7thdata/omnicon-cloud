@@ -19,6 +19,12 @@
         <script src="@ViewData["FontAwsome"]" crossorigin="anonymous"></script>
     }
 
+    @if (ViewData["Culture"] == null)
+    {
+        ViewData["Culture"] = "en";
+    }
+
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/side-nav.css" asp-append-version="true" />
@@ -28,42 +34,39 @@
         <!-- Sidebar -->
         <nav id="sidebar" class="bg-dark">
             <div class="sidebar-header text-center">
-                <h3 class="logo nav-logo">
-                    OmniCon Admin
-                </h3>
-                <strong class="logo nav-logo" style="font-size:1.2em;">
-                    Admin
-                </strong>
+                <a href="/@ViewData["Culture"]/admin" class="text-decoration-none text-white">
+                    <h3 class="logo nav-logo">
+                        OmniCon Admin
+                    </h3>
+                    <strong class="logo nav-logo" style="font-size:1.2em;">
+                        Admin
+                    </strong>
+                </a>
             </div>
             <ul class="list-unstyled components">
                 <li class="active">
                     <a href="#dashboardSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
-                        <span class="material-icons">dashboard</span>
-                        <span class="nav-label-text">Dashboard</span>
+                        <i class="fa-solid fa-gauge fa-fw"></i> Dashboard
                     </a>
                     <ul class="collapse list-unstyled" id="dashboardSubmenu">
                         <li>
                             <a href="/admin/dashboard">
-                                <span class="material-icons">analytics</span>
-                                <span class="nav-label-text">Overview</span>
+                                <i class="fa-solid fa-chart-mixed fa-fw"></i> Overview
                             </a>
                         </li>
                         <li>
                             <a href="/admin/users">
-                                <span class="material-icons">people</span>
-                                <span class="nav-label-text">Users</span>
+                                <i class="fa-solid fa-users fa-fw"></i> Users
                             </a>
                         </li>
                         <li>
                             <a href="/admin/articles">
-                                <span class="material-icons">article</span>
-                                <span class="nav-label-text">Articles</span>
+                                <i class="fa-solid fa-newspaper fa-fw"></i> Articles
                             </a>
                         </li>
                         <li>
                             <a href="/admin/authors">
-                                <span class="material-icons">person</span>
-                                <span class="nav-label-text">Authors</span>
+                                <i class="fa-solid fa-pen-nib fa-fw"></i> Authors
                             </a>
                         </li>
                     </ul>
@@ -71,29 +74,31 @@
 
                 <li>
                     <a href="/admin/files">
-                        <span class="material-icons">folder</span>
-                        <span class="nav-label-text">Files</span>
+                        <i class="fa-solid fa-file fa-fw"></i>
+                        Files
                     </a>
                 </li>
 
                 <li>
                     <a href="/admin/settings">
-                        <span class="material-icons">settings</span>
-                        <span class="nav-label-text">Settings</span>
+                        <i class="fa-solid fa-gear fa-fw"></i> Settings
                     </a>
                 </li>
-                
-                <!-- Logout Option -->
-                <li>
-                    <form action="/identity/account/logout" asp-controller="Account" method="post">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-link nav-link text-light">
-                            <span class="material-icons">logout</span>
-                            <span class="nav-label-text">Logout</span>
-                        </button>
-                    </form>
-                </li>
+
+
             </ul>
+           
+            <!-- Logout Option -->
+            <div class="mt-5 px-2 mx-1">
+                <form action="/identity/account/logout" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-link nav-link">
+                        <i class="fa-solid fa-arrow-up-left-from-circle fa-fw"></i> Logout
+                    </button>
+                </form>
+            </div>
+           
+
         </nav>
 
         <!-- Page Content -->
@@ -109,7 +114,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
- 
+
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

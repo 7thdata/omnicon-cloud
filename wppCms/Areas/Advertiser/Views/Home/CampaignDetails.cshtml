@@ -15,7 +15,8 @@
         <div class="col-md-6 my-2">
             <p>
                 <a href="/@Model.Culture/ads/organization/@Model.Channel.Channel.Id" class="text-decoration-none text-dark">
-                    <i class="fa-solid fa-arrow-left fa-fw"></i>
+                    <i class="bi bi-arrow-left"></i>
+
                 </a>
             </p>
             <div class="card card-body mb-4">
@@ -26,10 +27,12 @@
 
                 </h2>
                 <div>
-                    <i class="fa-solid fa-calendar fa-fw"></i> @Model.AdCampaign.StartDate.ToString("yyyy-MM-dd") - @Model.AdCampaign.EndDate.ToString("yyyy-MM-dd")
+                    <i class="bi bi-calendar-fill"></i>
+                    @Model.AdCampaign.StartDate.ToString("yyyy-MM-dd") - @Model.AdCampaign.EndDate.ToString("yyyy-MM-dd")
                 </div>
                 <div>
-                    <i class="fa-solid fa-wallet fa-fw"></i> @Model.AdCampaign.Budget.ToString("N0")
+                    <i class="bi bi-cash-stack"></i>
+                    @Model.AdCampaign.Budget.ToString("N0")
                 </div>
                 <div>
                     @Model.AdCampaign.Description
@@ -45,7 +48,7 @@
                 <div>
                     <!-- Button to trigger modal for creating a new ad group -->
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAdGroupModal">
-                        <i class="fa-solid fa-plus fa-fw"></i>
+                        <i class="bi bi-plus"></i>
                     </button>
                 </div>
             </div>
@@ -106,7 +109,7 @@
                     </div>
                     <div class="px-1">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-magnifying-glass fa-fw"></i>
+                            <i class="bi bi-search"></i>
                         </button>
                     </div>
                 </div>

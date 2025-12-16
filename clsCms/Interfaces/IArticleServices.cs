@@ -16,8 +16,9 @@ namespace clsCms.Services
         // Article CRUD
         Task<List<ArticleModel>> GetArticlesByChannelIdAsync(string userId, string channelId);
 
+        
         /// <summary>
-        /// Search for article.
+        /// Search article from Table.
         /// </summary>
         /// <param name="channelId"></param>
         /// <param name="searchQuery"></param>
@@ -25,6 +26,7 @@ namespace clsCms.Services
         /// <param name="itemsPerPage"></param>
         /// <param name="sort"></param>
         /// <param name="authorPermaName"></param>
+        /// <param name="folder"></param>
         /// <param name="isPublishDateSensitive"></param>
         /// <returns></returns>
         Task<PaginationModel<ArticleModel>> SearchArticlesAsync(
@@ -33,8 +35,17 @@ namespace clsCms.Services
      int currentPage = 1,
      int itemsPerPage = 10,
      string sort = "publishdate_desc",
-     string authorPermaName = null,
+     string? authorPermaName = null,
+     string? folder = null,
      bool isPublishDateSensitive = true);
+
+        /// <summary>
+        /// Get distinct list of folders for the channel.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="isPublishDateSensitive"></param>
+        /// <returns></returns>
+        Task<List<string>> GetFolderFacetsAsync(string channelId, bool isPublishDateSensitive = true);
 
         /// <summary>
         /// Record search query.
